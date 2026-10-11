@@ -1,12 +1,13 @@
 /**
  * PED PLATFORM - CHART.JS VISUALIZATION CONTROLLER
- * Manages responsive, modern Chart.js instances with sleek dark-theme palettes.
+ * St. Joseph's College IQAC Analytics
+ * Multi-dimensional visualizations for Departments and Faculty.
  */
 
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
-// Chart defaults for modern dark palette
+// Chart styling defaults
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.95)';
@@ -19,15 +20,14 @@ export class ChartController {
   constructor() {
     this.deptChart = null;
     this.pedagogyChart = null;
-    this.bloomsChart = null;
+    this.assessTypeChart = null;
     this.facultyRadarChart = null;
-    this.facultyBloomsChart = null;
   }
 
   /**
-   * Render or update Department-wise Performance Bar Chart
+   * Render Department Comparison Bar Chart (Dual bars: Annexure 9b vs 9c)
    */
-  renderDeptPerformance(canvasId, deptAverages) {
+  renderDeptComparison(canvasId, deptStats) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -35,27 +35,39 @@ export class ChartController {
       this.deptChart.destroy();
     }
 
-    const labels = Object.keys(deptAverages);
-    const data = Object.values(deptAverages);
+    const labels = Object.keys(deptStats);
+    const data9b = labels.map(k => deptStats[k].avg9b);
+    const data9c = labels.map(k => deptStats[k].avg9c);
 
     this.deptChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels.map(l => l.length > 22 ? l.slice(0, 20) + '...' : l),
-        datasets: [{
-          label: 'Mean Quality Score (/100)',
-          data: data,
-          backgroundColor: data.map(v => v >= 85 ? '#10b981' : (v >= 75 ? '#6366f1' : '#f59e0b')),
-          borderRadius: 8,
-          borderSkipped: false,
-          barPercentage: 0.55
-        }]
+        labels: labels,
+        datasets: [
+          {
+            label: 'Annexure 9(b) Pedagogy Score',
+            data: data9b,
+            backgroundColor: '#6366f1',
+            borderRadius: 6,
+            barPercentage: 0.7
+          },
+          {
+            label: 'Annexure 9(c) Assessment Score',
+            data: data9c,
+            backgroundColor: '#10b981',
+            borderRadius: 6,
+            barPercentage: 0.7
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false }
+          legend: {
+            position: 'top',
+            labels: { boxWidth: 12, font: { size: 11 } }
+          }
         },
         scales: {
           y: {
@@ -74,9 +86,9 @@ export class ChartController {
   }
 
   /**
-   * Render or update Pedagogical Methodologies Doughnut Chart
+   * Render Pedagogical Practices Doughnut Chart
    */
-  renderPedagogyDistribution(canvasId, pedagogyAdoption) {
+  renderPedagogyDistribution(canvasId, facultyRecords) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -84,12 +96,16 @@ export class ChartController {
       this.pedagogyChart.destroy();
     }
 
-    const labels = Object.keys(pedagogyAdoption);
-    const data = Object.values(pedagogyAdoption);
+    const counts = {};
+    facultyRecords.forEach(f => {
+      const method = f.annexure9b?.teachingMethod || "Active Learning";
+      const key = method.split('&')[0].trim();
+      counts[key] = (counts[key] || 0) + 1;
+    });
 
-    const colors = [
-      '#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#64748b'
-    ];
+    const labels = Object.keys(counts);
+    const data = Object.values(counts);
+    const colors = ['#6366f1', '#10b981', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6'];
 
     this.pedagogyChart = new Chart(ctx, {
       type: 'doughnut',
@@ -98,8 +114,8 @@ export class ChartController {
         datasets: [{
           data: data,
           backgroundColor: colors.slice(0, labels.length),
-          borderWidth: 2,
           borderColor: '#111827',
+          borderWidth: 2,
           hoverOffset: 6
         }]
       },
@@ -109,46 +125,44 @@ export class ChartController {
         plugins: {
           legend: {
             position: 'right',
-            labels: {
-              boxWidth: 12,
-              padding: 12,
-              font: { size: 11 }
-            }
+            labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
           }
         },
-        cutout: '68%'
+        cutout: '65%'
       }
     });
   }
 
   /**
-   * Render or update Bloom's Cognitive Taxonomy Breakdown Chart
+   * Render Assessment Types Breakdown (Summative vs Formative vs Alternative)
    */
-  renderBloomsInstitutional(canvasId, bloomsAggregates) {
+  renderAssessmentTypes(canvasId, facultyRecords) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    if (this.bloomsChart) {
-      this.bloomsChart.destroy();
+    if (this.assessTypeChart) {
+      this.assessTypeChart.destroy();
     }
 
-    const labels = Object.keys(bloomsAggregates);
-    const data = Object.values(bloomsAggregates);
+    let summative = 0, formative = 0, alternative = 0;
+    facultyRecords.forEach(f => {
+      if (f.annexure9c?.components) {
+        f.annexure9c.components.forEach(c => {
+          const t = (c.type || "").toLowerCase();
+          if (t.includes("summat")) summative++;
+          else if (t.includes("format")) formative++;
+          else if (t.includes("alternat") || t.includes("project") || t.includes("sprint")) alternative++;
+        });
+      }
+    });
 
-    this.bloomsChart = new Chart(ctx, {
-      type: 'polarArea',
+    this.assessTypeChart = new Chart(ctx, {
+      type: 'pie',
       data: {
-        labels: labels,
+        labels: ['Summative Assessments (CIA)', 'Formative In-Class Checks', 'Alternative Assessments (Projects/Sprints)'],
         datasets: [{
-          data: data,
-          backgroundColor: [
-            'rgba(148, 163, 184, 0.5)', // Remember
-            'rgba(56, 189, 248, 0.6)',  // Understand
-            'rgba(99, 102, 241, 0.7)',  // Apply
-            'rgba(16, 185, 129, 0.75)', // Analyze
-            'rgba(245, 158, 11, 0.75)', // Evaluate
-            'rgba(236, 72, 153, 0.85)'  // Create
-          ],
+          data: [summative, formative, alternative],
+          backgroundColor: ['#3b82f6', '#06b6d4', '#10b981'],
           borderColor: '#111827',
           borderWidth: 2
         }]
@@ -158,14 +172,8 @@ export class ChartController {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'right',
-            labels: { boxWidth: 10, font: { size: 11 } }
-          }
-        },
-        scales: {
-          r: {
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { display: false }
+            position: 'bottom',
+            labels: { boxWidth: 12, font: { size: 11 } }
           }
         }
       }
@@ -173,9 +181,9 @@ export class ChartController {
   }
 
   /**
-   * Render Individual Faculty 5-Dimension Competency Radar Chart
+   * Render Individual Faculty Radar Chart comparing 9(b) and 9(c) against benchmarks
    */
-  renderFacultyRadar(canvasId, criteria) {
+  renderFacultyRadar(canvasId, faculty) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -183,115 +191,81 @@ export class ChartController {
       this.facultyRadarChart.destroy();
     }
 
+    const b = faculty.annexure9b?.criteria || {
+      methodInnovation: { score: 20, max: 25 },
+      planningPurpose: { score: 16, max: 20 },
+      inClassDelivery: { score: 16, max: 20 },
+      impact: { score: 16, max: 20 },
+      reflection: { score: 12, max: 15 }
+    };
+
+    const c = faculty.annexure9c?.criteria || {
+      varietyBalance: { score: 20, max: 25 },
+      coCoverage: { score: 20, max: 25 },
+      transparency: { score: 16, max: 20 },
+      feedback: { score: 12, max: 15 },
+      reflection: { score: 12, max: 15 }
+    };
+
     const labels = [
-      'Pedagogy (25)',
-      "Bloom's HOTS (25)",
-      'OBE Rubrics (20)',
-      'ICT Tools (15)',
-      'Remedial Loop (15)'
+      'Pedagogical Innovation',
+      'In-Class Student Flow',
+      'Learning Impact Evidence',
+      'Assessment Variety (9c)',
+      'CO Alignment (9c)',
+      'Critical Reflection'
     ];
 
-    // Normalized to percentages 0-100 for balanced radar visual
     const data = [
-      (criteria.pedagogyInnovation.score / criteria.pedagogyInnovation.max) * 100,
-      (criteria.bloomsAlignment.score / criteria.bloomsAlignment.max) * 100,
-      (criteria.obeRubrics.score / criteria.obeRubrics.max) * 100,
-      (criteria.ictIntegration.score / criteria.ictIntegration.max) * 100,
-      (criteria.remedialImpact.score / criteria.remedialImpact.max) * 100
+      (b.methodInnovation.score / b.methodInnovation.max) * 100,
+      (b.inClassDelivery.score / b.inClassDelivery.max) * 100,
+      (b.impact.score / b.impact.max) * 100,
+      (c.varietyBalance.score / c.varietyBalance.max) * 100,
+      (c.coCoverage.score / c.coCoverage.max) * 100,
+      ((b.reflection.score + c.reflection.score) / (b.reflection.max + c.reflection.max)) * 100
     ];
 
     this.facultyRadarChart = new Chart(ctx, {
       type: 'radar',
       data: {
         labels: labels,
-        datasets: [{
-          label: 'Faculty Attainment (%)',
-          data: data,
-          backgroundColor: 'rgba(99, 102, 241, 0.25)',
-          borderColor: '#818cf8',
-          borderWidth: 2.5,
-          pointBackgroundColor: '#818cf8',
-          pointBorderColor: '#ffffff',
-          pointHoverRadius: 6
-        },
-        {
-          label: 'IQAC Benchmark',
-          data: [80, 75, 75, 70, 75],
-          backgroundColor: 'transparent',
-          borderColor: 'rgba(16, 185, 129, 0.6)',
-          borderDash: [4, 4],
-          borderWidth: 1.5,
-          pointRadius: 0
-        }]
+        datasets: [
+          {
+            label: `${faculty.facultyName} Attainment (%)`,
+            data: data,
+            backgroundColor: 'rgba(99, 102, 241, 0.25)',
+            borderColor: '#818cf8',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#818cf8'
+          },
+          {
+            label: 'IQAC College Benchmark (75%)',
+            data: [75, 75, 75, 75, 75, 75],
+            backgroundColor: 'transparent',
+            borderColor: 'rgba(16, 185, 129, 0.6)',
+            borderDash: [4, 4],
+            borderWidth: 1.5,
+            pointRadius: 0
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { font: { size: 11 } }
-          }
+          legend: { position: 'bottom', labels: { font: { size: 11 } } }
         },
         scales: {
           r: {
-            min: 20,
+            min: 30,
             max: 100,
             ticks: { display: false, stepSize: 20 },
             grid: { color: 'rgba(255, 255, 255, 0.08)' },
             angleLines: { color: 'rgba(255, 255, 255, 0.08)' },
             pointLabels: {
               color: '#cbd5e1',
-              font: { size: 11, weight: '600' }
+              font: { size: 10.5, weight: '600' }
             }
-          }
-        }
-      }
-    });
-  }
-
-  /**
-   * Render Individual Faculty Bloom's Distribution
-   */
-  renderFacultyBlooms(canvasId, cognitiveBreakdown) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-
-    if (this.facultyBloomsChart) {
-      this.facultyBloomsChart.destroy();
-    }
-
-    const labels = Object.keys(cognitiveBreakdown);
-    const data = Object.values(cognitiveBreakdown);
-
-    this.facultyBloomsChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Targeted Weight (%)',
-          data: data,
-          backgroundColor: [
-            '#94a3b8', '#38bdf8', '#6366f1', '#10b981', '#f59e0b', '#ec4899'
-          ],
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: {
-            min: 0,
-            max: 50,
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { stepSize: 10 }
-          },
-          x: {
-            grid: { display: false }
           }
         }
       }

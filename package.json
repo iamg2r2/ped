@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
-    "lucide": "^1.55.0"
+    "lucide": "^1.55.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299"
   }
 }

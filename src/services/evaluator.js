@@ -1,376 +1,381 @@
 /**
  * PED PLATFORM - MULTI-CRITERIA EVALUATION ENGINE
- * Automatically evaluates faculty pedagogical and assessment practice reports,
- * scoring them across 5 accreditation-aligned dimensions and generating
- * qualitative feedback, Bloom's cognitive taxonomy profiles, and IQAC indicators.
+ * Tailored for St. Joseph's College (Autonomous), Tiruchirappalli IQAC.
+ * Systematically evaluates:
+ * - Annexure 9(b): Faculty Reflection on Pedagogical Practices
+ * - Annexure 9(c): Faculty Reflection on Assessment Components
  */
 
 export class EvaluatorEngine {
   /**
-   * Evaluate a single faculty submission
-   * @param {Object} sub Submission object
-   * @returns {Object} Evaluation report card
+   * Evaluate Annexure 9(b): Pedagogical Practice
+   * @param {Object} rawData 
+   * @returns {Object} Evaluated 9(b) record
    */
-  static evaluateSubmission(sub) {
-    // 1. Pedagogical Innovation (Max 25)
-    let scorePedagogy = 10;
-    const practice = (sub.pedagogicalPractice || "").toLowerCase();
-    const desc = (sub.practiceDescription || "").toLowerCase();
+  static evaluateAnnexure9b(rawData) {
+    const method = (rawData.teachingMethod || rawData.pedagogicalPractice || "").toLowerCase();
+    const approach = (rawData.pedagogicalApproach || "").toLowerCase();
+    const planning = (rawData.planningPurpose || "").toLowerCase();
+    const delivery = (rawData.inClassDelivery || "").toLowerCase();
+    const impact = (rawData.impact || "").toLowerCase();
+    const lookingAhead = (rawData.lookingAhead || "").toLowerCase();
+    const tools = (rawData.tools || rawData.ictTools || "").toLowerCase();
 
-    if (practice.includes("project") || practice.includes("flipped") || practice.includes("hackathon") || practice.includes("peer")) {
-      scorePedagogy = 24;
-    } else if (practice.includes("problem") || practice.includes("simulation") || practice.includes("virtual lab") || practice.includes("think-pair")) {
-      scorePedagogy = 21;
-    } else if (practice.includes("case study") || practice.includes("gamified")) {
-      scorePedagogy = 19;
-    } else if (practice.includes("traditional") || practice.includes("lecture")) {
-      scorePedagogy = 8;
+    // 1. Method Innovation & Student-Centricity (Max 25)
+    let scoreMethod = 10;
+    if (method.includes("project") || method.includes("flipped") || method.includes("hackathon") || method.includes("sprint")) {
+      scoreMethod = 24;
+    } else if (method.includes("simulation") || method.includes("virtual lab") || method.includes("problem") || method.includes("think-pair")) {
+      scoreMethod = 22;
+    } else if (method.includes("case") || method.includes("role-play") || method.includes("inquiry")) {
+      scoreMethod = 20;
+    } else if (method.includes("traditional") || method.includes("blackboard") || method.includes("chalk")) {
+      scoreMethod = 8;
+    }
+    if (approach.includes("collaborative") || approach.includes("experiential") || approach.includes("active")) {
+      scoreMethod = Math.min(25, scoreMethod + 1);
     }
 
-    if (desc.includes("collaborative") || desc.includes("hands-on") || desc.includes("active")) {
-      scorePedagogy = Math.min(25, scorePedagogy + 1);
+    // 2. Planning & Purpose Rigor (Max 20)
+    let scorePlanning = 12;
+    if (planning.length > 50 && (planning.includes("outcome") || planning.includes("engage") || planning.includes("active") || planning.includes("problem"))) {
+      scorePlanning = 19;
+    } else if (planning.includes("dictate") || planning.includes("memorize") || planning.length < 30) {
+      scorePlanning = 9;
     }
 
-    // 2. Bloom's Taxonomy Cognitive Demand (Max 25)
-    let scoreBlooms = 10;
-    const levels = Array.isArray(sub.bloomsLevels) ? sub.bloomsLevels : (typeof sub.bloomsLevels === 'string' ? sub.bloomsLevels.split(',').map(s => s.trim()) : []);
-    const normalizedLevels = levels.map(l => l.toLowerCase());
-    
-    const hasCreate = normalizedLevels.some(l => l.includes("create"));
-    const hasEvaluate = normalizedLevels.some(l => l.includes("eval"));
-    const hasAnalyze = normalizedLevels.some(l => l.includes("analy"));
-    const hasApply = normalizedLevels.some(l => l.includes("apply"));
-    const hasUnderstand = normalizedLevels.some(l => l.includes("understand"));
-    const hasRemember = normalizedLevels.some(l => l.includes("remember"));
-
-    let hotsCount = (hasCreate ? 1 : 0) + (hasEvaluate ? 1 : 0) + (hasAnalyze ? 1 : 0);
-    let lotsCount = (hasRemember ? 1 : 0) + (hasUnderstand ? 1 : 0);
-
-    if (hasCreate && hasEvaluate) {
-      scoreBlooms = 25;
-    } else if (hotsCount >= 2) {
-      scoreBlooms = 22;
-    } else if (hasAnalyze || hasApply) {
-      scoreBlooms = 18;
-    } else if (lotsCount > 0 && hotsCount === 0) {
-      scoreBlooms = 9;
+    // 3. In-Class Delivery & Flow (Max 20)
+    let scoreDelivery = 12;
+    if (delivery.length > 50 && (delivery.includes("student") || delivery.includes("team") || delivery.includes("pair") || delivery.includes("hands-on") || delivery.includes("squad"))) {
+      scoreDelivery = 19;
+    } else if (delivery.includes("copied") || delivery.includes("quiet") || delivery.length < 30) {
+      scoreDelivery = 8;
     }
 
-    // 3. Outcome-Based Education (OBE) & Rubric Quality (Max 20)
-    let scoreObe = 8;
-    if (sub.rubricAttached === true || String(sub.rubricAttached).toLowerCase() === 'true') {
-      scoreObe += 7;
-    }
-    const assessMethod = (sub.assessmentMethod || "").toLowerCase();
-    if (assessMethod.includes("rubric") || assessMethod.includes("open-ended") || assessMethod.includes("prototype") || assessMethod.includes("coding")) {
-      scoreObe += 5;
-    } else if (assessMethod.includes("quiz") || assessMethod.includes("formative")) {
-      scoreObe += 3;
-    }
-    scoreObe = Math.min(20, scoreObe);
-
-    // 4. ICT & Digital Tools Integration (Max 15)
-    let scoreIct = 5;
-    const ict = (sub.ictTools || "").toLowerCase();
-    if (ict.includes("colab") || ict.includes("github") || ict.includes("aws") || ict.includes("ansys") || ict.includes("matlab") || ict.includes("docker") || ict.includes("wokwi")) {
-      scoreIct = 15;
-    } else if (ict.includes("moodle") || ict.includes("canvas") || ict.includes("mentimeter") || ict.includes("virtual lab")) {
-      scoreIct = 12;
-    } else if (ict.includes("powerpoint") || ict.includes("slide") || ict === "") {
-      scoreIct = 5;
-    } else {
-      scoreIct = 9;
+    // 4. Impact & Student Learning Evidence (Max 20)
+    let scoreImpact = 12;
+    if (impact.length > 40 && (impact.includes("%") || impact.includes("retention") || impact.includes("optimal") || impact.includes("demonstrated") || impact.includes("achieved"))) {
+      scoreImpact = 19;
+    } else if (impact.includes("recall") || impact.length < 30) {
+      scoreImpact = 8;
     }
 
-    // 5. Student Impact & Remedial Loop (Max 15)
-    let scoreFeedback = 6;
-    const feedbackVal = parseFloat(sub.studentFeedbackScore) || 3.5;
-    // Scaled 1-5 to 1-8 points
-    const feedbackPoints = Math.min(8, Math.max(2, ((feedbackVal - 1) / 4) * 8));
-    
-    let remedialPoints = 2;
-    const remedial = (sub.remedialAction || "").toLowerCase();
-    if (remedial.length > 20 && !remedial.includes("no formal")) {
-      remedialPoints = 7;
+    // 5. Critical Reflection & Looking Ahead (Max 15)
+    let scoreReflection = 8;
+    if (lookingAhead.length > 40 && (lookingAhead.includes("improve") || lookingAhead.includes("future") || lookingAhead.includes("challenge") || lookingAhead.includes("introduce") || lookingAhead.includes("scaffold"))) {
+      scoreReflection = 14;
+    } else if (lookingAhead.includes("if time permits") || lookingAhead.length < 20) {
+      scoreReflection = 6;
     }
-    scoreFeedback = Math.round(feedbackPoints + remedialPoints);
-    scoreFeedback = Math.min(15, scoreFeedback);
 
-    // Total Score
-    const totalScore = Math.round(scorePedagogy + scoreBlooms + scoreObe + scoreIct + scoreFeedback);
+    // Tools bonus
+    if (tools.includes("moodle") || tools.includes("github") || tools.includes("colab") || tools.includes("virtual lab") || tools.includes("simulation")) {
+      scoreMethod = Math.min(25, scoreMethod + 1);
+    }
 
-    // Grade Band Determination
+    const totalScore = Math.round(scoreMethod + scorePlanning + scoreDelivery + scoreImpact + scoreReflection);
+
+    // Band
     let band = "Developing";
-    let bandClass = "badge-warning";
-    if (totalScore >= 90) {
-      band = "Exemplary";
-      bandClass = "badge-success";
-    } else if (totalScore >= 75) {
-      band = "Proficient";
-      bandClass = "badge-indigo";
-    } else if (totalScore >= 60) {
-      band = "Developing";
-      bandClass = "badge-warning";
-    } else {
-      band = "Needs Improvement";
-      bandClass = "badge-danger";
+    if (totalScore >= 90) band = "Exemplary";
+    else if (totalScore >= 75) band = "Proficient";
+    else if (totalScore >= 60) band = "Developing";
+    else band = "Needs Improvement";
+
+    // Strengths & Recommendations
+    const strengths = [];
+    const recommendations = [];
+
+    if (scoreMethod >= 22) {
+      strengths.push(`High student-centric engagement demonstrated through ${rawData.teachingMethod || "innovative pedagogy"}.`);
+    }
+    if (scorePlanning >= 17) {
+      strengths.push("Clear outcome-based articulation in planning and session purpose.");
+    }
+    if (scoreImpact >= 17) {
+      strengths.push("Documented empirical signs of student learning and conceptual retention.");
+    }
+    if (tools.length > 3 && !tools.includes("chalk")) {
+      strengths.push(`Effective deployment of digital tools (${rawData.tools || tools}).`);
+    }
+    if (strengths.length === 0) {
+      strengths.push("Basic syllabus coverage accomplished.");
     }
 
-    // Cognitive Percentages for Charts
-    const cognitiveBreakdown = this.calculateCognitiveWeights(normalizedLevels, practice, desc);
-
-    // Strengths & Growth Areas
-    const { strengths, recommendations } = this.generateQualitativeFeedback({
-      totalScore,
-      scorePedagogy,
-      scoreBlooms,
-      scoreObe,
-      scoreIct,
-      scoreFeedback,
-      sub
-    });
+    if (scoreMethod < 16) {
+      recommendations.push("Shift away from lecture-only delivery: incorporate Think-Pair-Share, Flipped Classroom, or PjBL sprints.");
+    }
+    if (scoreImpact < 14) {
+      recommendations.push("Establish clear diagnostic checks to verify student learning during class delivery.");
+    }
+    if (scoreReflection < 10) {
+      recommendations.push("Formulate specific corrective interventions for future iterations of this unit.");
+    }
+    if (recommendations.length === 0) {
+      recommendations.push("Document this session as an institutional best practice for IQAC dissemination.");
+    }
 
     return {
-      ...sub,
-      evaluated: true,
-      totalScore,
+      submitted: true,
+      submissionDate: rawData.submissionDate || new Date().toISOString().split('T')[0],
+      fileName: rawData.fileName || "Annexure_9_b_Submission.docx",
+      unit: rawData.unit || "Unit I",
+      topic: rawData.topic || "Core Curriculum Topic",
+      teachingMethod: rawData.teachingMethod || rawData.pedagogicalPractice || "Active Learning",
+      pedagogicalApproach: rawData.pedagogicalApproach || "Experiential Learning",
+      tools: rawData.tools || rawData.ictTools || "LMS & Digital Media",
+      coAlignment: rawData.coAlignment || "CO1, CO2",
+      planningPurpose: rawData.planningPurpose || "Session planning.",
+      inClassDelivery: rawData.inClassDelivery || "In-class delivery.",
+      impact: rawData.impact || "Student learning observed.",
+      lookingAhead: rawData.lookingAhead || "Continuous improvement reflection.",
+      score: totalScore,
       band,
-      bandClass,
       criteria: {
-        pedagogyInnovation: { score: scorePedagogy, max: 25, label: "Pedagogical Innovation" },
-        bloomsAlignment: { score: scoreBlooms, max: 25, label: "Bloom's Higher-Order Demand" },
-        obeRubrics: { score: scoreObe, max: 20, label: "Outcome-Based Rubrics Rigor" },
-        ictIntegration: { score: scoreIct, max: 15, label: "ICT & Simulation Integration" },
-        remedialImpact: { score: scoreFeedback, max: 15, label: "Student Feedback & Remedial Loop" }
+        methodInnovation: { score: scoreMethod, max: 25, label: "Pedagogical Innovation" },
+        planningPurpose: { score: scorePlanning, max: 20, label: "Planning & Purpose" },
+        inClassDelivery: { score: scoreDelivery, max: 20, label: "In-Class Student Flow" },
+        impact: { score: scoreImpact, max: 20, label: "Learning Impact & Signs" },
+        reflection: { score: scoreReflection, max: 15, label: "Looking Ahead Reflection" }
       },
-      cognitiveBreakdown,
       strengths,
       recommendations
     };
   }
 
   /**
-   * Calculate cognitive weight breakdown across 6 Bloom's levels
+   * Evaluate Annexure 9(c): Assessment Components
+   * @param {Object} rawData 
+   * @returns {Object} Evaluated 9(c) record
    */
-  static calculateCognitiveWeights(levels, practice, desc) {
-    let rem = 10, und = 15, app = 25, ana = 25, eva = 15, cre = 10;
+  static evaluateAnnexure9c(rawData) {
+    const components = rawData.components || rawData.assessmentComponents || [];
+    const whatWorked = (rawData.whatWorked || "").toLowerCase();
+    const whatCouldImprove = (rawData.whatCouldImprove || "").toLowerCase();
 
-    if (levels.some(l => l.includes("remember")) && levels.length <= 2) {
-      rem = 45; und = 35; app = 15; ana = 5; eva = 0; cre = 0;
-    } else if (levels.some(l => l.includes("create")) && levels.some(l => l.includes("eval"))) {
-      rem = 5; und = 10; app = 20; ana = 25; eva = 20; cre = 20;
-    } else if (levels.some(l => l.includes("apply")) && levels.some(l => l.includes("analy"))) {
-      rem = 10; und = 15; app = 35; ana = 30; eva = 5; cre = 5;
+    // 1. Assessment Variety & Balance (Max 25)
+    let hasSummative = false, hasFormative = false, hasAlternative = false;
+    components.forEach(c => {
+      const type = (c.type || "").toLowerCase();
+      if (type.includes("summat")) hasSummative = true;
+      if (type.includes("format")) hasFormative = true;
+      if (type.includes("alternat") || type.includes("project") || type.includes("sprint") || type.includes("review")) hasAlternative = true;
+    });
+
+    let scoreVariety = 10;
+    if (hasSummative && hasFormative && hasAlternative) scoreVariety = 24;
+    else if ((hasSummative && hasAlternative) || (hasFormative && hasAlternative)) scoreVariety = 20;
+    else if (hasSummative && hasFormative) scoreVariety = 18;
+    else if (hasSummative) scoreVariety = 12;
+
+    // 2. Course Outcome Coverage (Max 25)
+    const outcomes = rawData.courseOutcomes || [];
+    let scoreCo = 12;
+    if (outcomes.length >= 4) scoreCo = 23;
+    else if (outcomes.length >= 2) scoreCo = 18;
+
+    // 3. Transparency & Advance Announcements (Max 20)
+    let scoreTransparency = 12;
+    const hasPreMaterials = components.some(c => (c.preMaterials || "").length > 5 || (c.before || "").length > 5);
+    const hasDates = components.some(c => c.announcedDate || c.date);
+    if (hasPreMaterials && hasDates) scoreTransparency = 19;
+    else if (hasPreMaterials || hasDates) scoreTransparency = 15;
+
+    // 4. Formative Post-Assessment Feedback (Max 15)
+    let scoreFeedback = 8;
+    const hasPostMaterials = components.some(c => (c.postMaterials || "").length > 5 || (c.after || "").length > 5);
+    if (hasPostMaterials) scoreFeedback = 14;
+
+    // 5. Faculty Reflection on Improvement (Max 15)
+    let scoreReflection = 8;
+    if (whatWorked.length > 30 && whatCouldImprove.length > 30 && !whatCouldImprove.includes("copied")) {
+      scoreReflection = 14;
     }
 
-    return {
-      Remember: rem,
-      Understand: und,
-      Apply: app,
-      Analyze: ana,
-      Evaluate: eva,
-      Create: cre
-    };
-  }
+    const totalScore = Math.round(scoreVariety + scoreCo + scoreTransparency + scoreFeedback + scoreReflection);
 
-  /**
-   * Generate constructive academic qualitative feedback
-   */
-  static generateQualitativeFeedback({ totalScore, scorePedagogy, scoreBlooms, scoreObe, scoreIct, scoreFeedback, sub }) {
+    // Band
+    let band = "Developing";
+    if (totalScore >= 90) band = "Exemplary";
+    else if (totalScore >= 75) band = "Proficient";
+    else if (totalScore >= 60) band = "Developing";
+    else band = "Needs Improvement";
+
     const strengths = [];
     const recommendations = [];
 
-    // Evaluate Strengths
-    if (scorePedagogy >= 22) {
-      strengths.push(`High student-centric engagement demonstrated through ${sub.pedagogicalPractice}.`);
+    if (hasAlternative) {
+      strengths.push("Exemplary deployment of Alternative Assessment components fostering practical competency.");
     }
-    if (scoreBlooms >= 21) {
-      strengths.push("Assessments heavily targeted Higher-Order Thinking Skills (HOTS: Analyze, Evaluate, Create).");
+    if (hasSummative && hasFormative) {
+      strengths.push("Healthy balance between high-stakes summative exams and low-stakes formative check-ins.");
     }
-    if (scoreObe >= 17) {
-      strengths.push("Explicit grading rubrics shared with learners, ensuring CIE transparency (NAAC 2.5.1).");
+    if (scoreTransparency >= 17) {
+      strengths.push("High transparency in CIE: advance announcement dates and study rubrics provided.");
     }
-    if (scoreIct >= 12) {
-      strengths.push(`Effective digital enablement using advanced tools: ${sub.ictTools}.`);
-    }
-    if (parseFloat(sub.studentFeedbackScore) >= 4.5) {
-      strengths.push(`Outstanding student satisfaction rating (${sub.studentFeedbackScore}/5.0).`);
-    }
-
     if (strengths.length === 0) {
-      strengths.push("Syllabus mapped to basic foundational learning outcomes.");
+      strengths.push("Basic compliance with internal assessment schedule.");
     }
 
-    // Evaluate Recommendations
-    if (scoreBlooms < 18) {
-      recommendations.push("Increase cognitive demand: introduce problem sets requiring students to Evaluate and Synthesize solutions rather than rote recall.");
+    if (!hasAlternative) {
+      recommendations.push("Introduce Alternative Assessment methods (e.g. open-ended problem solving, peer code reviews, case studies) to evaluate higher cognitive skills.");
     }
-    if (scoreObe < 15) {
-      recommendations.push("Develop explicit 4-tier analytic rubrics for open-ended assignments and attach to syllabus dossier.");
+    if (!hasPostMaterials) {
+      recommendations.push("Provide explicit post-assessment diagnostic review sessions and published rubrics to students.");
     }
-    if (scoreIct < 10) {
-      recommendations.push("Incorporate modern simulation environments, virtual laboratories, or collaborative code platforms into weekly modules.");
-    }
-    if (scorePedagogy < 16) {
-      recommendations.push("Transition towards interactive pedagogy: incorporate Think-Pair-Share, Flipped Classroom, or PjBL sprints.");
-    }
-    if (!sub.remedialAction || sub.remedialAction.toLowerCase().includes("no formal")) {
-      recommendations.push("Document structured remedial sessions and peer-assisted learning mechanisms for students needing academic support.");
-    }
-
     if (recommendations.length === 0) {
-      recommendations.push("Consider publishing this pedagogical practice as an institutional best practice paper in an engineering education journal.");
+      recommendations.push("Continue publishing exemplary CIE rubrics for departmental standardization.");
     }
-
-    return { strengths, recommendations };
-  }
-
-  /**
-   * Aggregate institutional analytics for IQAC
-   * @param {Array} evaluatedSubmissions 
-   */
-  static computeIqacAnalytics(evaluatedSubmissions) {
-    if (!evaluatedSubmissions || evaluatedSubmissions.length === 0) {
-      return {
-        totalSubmissions: 0,
-        averageScore: 0,
-        qualityBand: "N/A",
-        higherOrderRatio: 0,
-        naacCompliance: 0,
-        deptAverages: {},
-        pedagogyAdoption: {},
-        bloomsAggregates: { Remember: 0, Understand: 0, Apply: 0, Analyze: 0, Evaluate: 0, Create: 0 }
-      };
-    }
-
-    const total = evaluatedSubmissions.length;
-    const sumScore = evaluatedSubmissions.reduce((acc, s) => acc + s.totalScore, 0);
-    const avgScore = Number((sumScore / total).toFixed(1));
-
-    // Quality Band
-    let qualityBand = "Proficient";
-    if (avgScore >= 85) qualityBand = "Exemplary";
-    else if (avgScore >= 70) qualityBand = "Proficient";
-    else qualityBand = "Developing";
-
-    // Dept Averages
-    const deptTotals = {};
-    const deptCounts = {};
-    evaluatedSubmissions.forEach(s => {
-      const d = s.department || "Other";
-      deptTotals[d] = (deptTotals[d] || 0) + s.totalScore;
-      deptCounts[d] = (deptCounts[d] || 0) + 1;
-    });
-
-    const deptAverages = {};
-    Object.keys(deptTotals).forEach(d => {
-      deptAverages[d] = Number((deptTotals[d] / deptCounts[d]).toFixed(1));
-    });
-
-    // Pedagogy Adoption distribution
-    const pedagogyAdoption = {};
-    evaluatedSubmissions.forEach(s => {
-      const p = s.pedagogicalPractice || "Other";
-      pedagogyAdoption[p] = (pedagogyAdoption[p] || 0) + 1;
-    });
-
-    // Bloom's Aggregate
-    const bloomsAggregates = { Remember: 0, Understand: 0, Apply: 0, Analyze: 0, Evaluate: 0, Create: 0 };
-    evaluatedSubmissions.forEach(s => {
-      if (s.cognitiveBreakdown) {
-        Object.keys(s.cognitiveBreakdown).forEach(k => {
-          bloomsAggregates[k] = (bloomsAggregates[k] || 0) + s.cognitiveBreakdown[k];
-        });
-      }
-    });
-
-    Object.keys(bloomsAggregates).forEach(k => {
-      bloomsAggregates[k] = Math.round(bloomsAggregates[k] / total);
-    });
-
-    // Higher Order Ratio (Analyze + Evaluate + Create)
-    const hotsTotal = bloomsAggregates.Analyze + bloomsAggregates.Evaluate + bloomsAggregates.Create;
-    const higherOrderRatio = Math.round(hotsTotal);
-
-    // NAAC Criterion 2.3.1 Compliance (% submissions with active/problem/experiential learning)
-    const studentCentricCount = evaluatedSubmissions.filter(s => {
-      const p = (s.pedagogicalPractice || "").toLowerCase();
-      return !p.includes("traditional") && !p.includes("chalk");
-    }).length;
-    const naacCompliance = Math.round((studentCentricCount / total) * 100);
 
     return {
-      totalSubmissions: total,
-      averageScore: avgScore,
-      qualityBand,
-      higherOrderRatio,
-      naacCompliance,
-      deptAverages,
-      pedagogyAdoption,
-      bloomsAggregates
+      submitted: true,
+      submissionDate: rawData.submissionDate || new Date().toISOString().split('T')[0],
+      fileName: rawData.fileName || "Annexure_9_c_Submission.docx",
+      courseOutcomes: outcomes.length > 0 ? outcomes : [
+        "CO1: Understand foundational principles.",
+        "CO2: Apply methods to solve domain problems.",
+        "CO3: Analyze and evaluate system solutions."
+      ],
+      components: components.length > 0 ? components : [
+        { name: "Continuous Internal Assessment (CIA 1)", type: "Summative", co: "CO1, CO2", scored: true, marks: 25 },
+        { name: "Alternative Evaluation Task", type: "Alternative", co: "CO2, CO3", scored: true, marks: 20 }
+      ],
+      whatWorked: rawData.whatWorked || "Assessment executed per schedule.",
+      whatCouldImprove: rawData.whatCouldImprove || "Stagger deadlines in future iterations.",
+      score: totalScore,
+      band,
+      criteria: {
+        varietyBalance: { score: scoreVariety, max: 25, label: "Assessment Component Variety" },
+        coCoverage: { score: scoreCo, max: 25, label: "Course Outcome (CO) Coverage" },
+        transparency: { score: scoreTransparency, max: 20, label: "Advance Notice & Pre-Materials" },
+        feedback: { score: scoreFeedback, max: 15, label: "Post-Assessment Feedback" },
+        reflection: { score: scoreReflection, max: 15, label: "Faculty Reflection & Improvement" }
+      },
+      strengths,
+      recommendations
     };
   }
 
   /**
-   * Parse CSV string into array of submission objects
+   * Compute composite score and status for a faculty member
    */
-  static parseCsv(csvText) {
-    const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
-    if (lines.length < 2) return [];
+  static computeFacultyComposite(facultyRecord) {
+    let score9b = facultyRecord.annexure9b?.score || 0;
+    let score9c = facultyRecord.annexure9c?.score || 0;
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-    const results = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      // Basic CSV token parser handling quotes
-      const row = lines[i];
-      const values = [];
-      let current = '';
-      let inQuotes = false;
-      for (let c = 0; c < row.length; c++) {
-        const char = row[c];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      values.push(current.trim());
-
-      const obj = {};
-      headers.forEach((h, idx) => {
-        const val = values[idx] || '';
-        obj[h] = val.replace(/^"|"$/g, '');
-      });
-
-      // Map to standard schema
-      results.push({
-        id: `SUB-${Date.now()}-${i}`,
-        facultyId: obj["Faculty ID"] || obj.facultyId || `FAC-UPLOAD-${i}`,
-        facultyName: obj["Faculty Name"] || obj.facultyName || "Unknown Faculty",
-        designation: obj["Designation"] || obj.designation || "Assistant Professor",
-        department: obj["Department"] || obj.department || "Computer Science & Engineering",
-        courseCode: obj["Course Code"] || obj.courseCode || "CS101",
-        courseTitle: obj["Course Title"] || obj.courseTitle || "Core Course",
-        academicYear: obj["Academic Year"] || obj.academicYear || "2025-26",
-        pedagogicalPractice: obj["Pedagogical Practice"] || obj.pedagogicalPractice || "Active Learning",
-        practiceCategory: obj["Practice Category"] || obj.practiceCategory || "Experiential Learning",
-        practiceDescription: obj["Practice Description"] || obj.practiceDescription || "",
-        assessmentMethod: obj["Assessment Method"] || obj.assessmentMethod || "Continuous Internal Evaluation",
-        bloomsLevels: obj["Bloom's Levels"] ? obj["Bloom's Levels"].split(';').map(s => s.trim()) : ["Apply", "Analyze"],
-        ictTools: obj["ICT Tools"] || obj.ictTools || "LMS",
-        studentFeedbackScore: parseFloat(obj["Student Feedback Score"] || obj.studentFeedbackScore) || 4.2,
-        passPercentage: parseFloat(obj["Pass Percentage"] || obj.passPercentage) || 85.0,
-        evidenceAttached: (obj["Evidence Attached"] || "").toLowerCase() === 'true',
-        rubricAttached: (obj["Rubric Attached"] || "").toLowerCase() === 'true',
-        remedialAction: obj["Remedial Action"] || obj.remedialAction || "Peer support and extra tutorials",
-        submissionDate: new Date().toISOString().split('T')[0]
-      });
+    let composite = 0;
+    if (facultyRecord.annexure9b?.submitted && facultyRecord.annexure9c?.submitted) {
+      composite = Number(((score9b + score9c) / 2).toFixed(1));
+    } else if (facultyRecord.annexure9b?.submitted) {
+      composite = score9b;
+    } else if (facultyRecord.annexure9c?.submitted) {
+      composite = score9c;
     }
 
-    return results;
+    let statusBand = "Pending";
+    if (composite >= 90) statusBand = "Exemplary";
+    else if (composite >= 75) statusBand = "Proficient";
+    else if (composite >= 60) statusBand = "Developing";
+    else if (composite > 0) statusBand = "Needs Improvement";
+
+    return {
+      ...facultyRecord,
+      compositeScore: composite,
+      statusBand
+    };
+  }
+
+  /**
+   * Aggregate college-level and department-level IQAC analytics
+   */
+  static computeCollegeAnalytics(departments, facultyRecords) {
+    const totalFaculty = facultyRecords.length;
+    const totalDepts = departments.length;
+
+    let sum9b = 0, count9b = 0;
+    let sum9c = 0, count9c = 0;
+    let sumComposite = 0, countComposite = 0;
+
+    const deptStats = {};
+    departments.forEach(d => {
+      deptStats[d.name] = {
+        name: d.name,
+        code: d.code,
+        hod: d.hod,
+        totalFaculty: d.totalFaculty,
+        submittedCount: 0,
+        sum9b: 0, count9b: 0,
+        sum9c: 0, count9c: 0,
+        avg9b: 0,
+        avg9c: 0,
+        avgComposite: 0,
+        completionRate: 0,
+        topMethod: "Active Learning"
+      };
+    });
+
+    facultyRecords.forEach(f => {
+      const dName = f.department;
+      if (!deptStats[dName]) {
+        deptStats[dName] = {
+          name: dName,
+          code: dName.slice(0, 3).toUpperCase(),
+          hod: "HOD",
+          totalFaculty: 1,
+          submittedCount: 0,
+          sum9b: 0, count9b: 0,
+          sum9c: 0, count9c: 0,
+          avg9b: 0, avg9c: 0, avgComposite: 0,
+          completionRate: 0,
+          topMethod: "Active Learning"
+        };
+      }
+
+      const st = deptStats[dName];
+
+      if (f.annexure9b?.submitted) {
+        sum9b += f.annexure9b.score;
+        count9b++;
+        st.sum9b += f.annexure9b.score;
+        st.count9b++;
+      }
+
+      if (f.annexure9c?.submitted) {
+        sum9c += f.annexure9c.score;
+        count9c++;
+        st.sum9c += f.annexure9c.score;
+        st.count9c++;
+      }
+
+      if (f.compositeScore > 0) {
+        sumComposite += f.compositeScore;
+        countComposite++;
+        st.submittedCount++;
+      }
+    });
+
+    // Compute Department Averages
+    Object.keys(deptStats).forEach(k => {
+      const s = deptStats[k];
+      s.avg9b = s.count9b > 0 ? Number((s.sum9b / s.count9b).toFixed(1)) : 0;
+      s.avg9c = s.count9c > 0 ? Number((s.sum9c / s.count9c).toFixed(1)) : 0;
+      s.avgComposite = Number(((s.avg9b + s.avg9c) / 2).toFixed(1));
+      s.completionRate = Math.round((s.submittedCount / (s.totalFaculty || 1)) * 100);
+    });
+
+    const collegeAvg9b = count9b > 0 ? Number((sum9b / count9b).toFixed(1)) : 0;
+    const collegeAvg9c = count9c > 0 ? Number((sum9c / count9c).toFixed(1)) : 0;
+    const collegeComposite = countComposite > 0 ? Number((sumComposite / countComposite).toFixed(1)) : 0;
+
+    return {
+      totalFaculty,
+      totalDepts,
+      submitted9bCount: count9b,
+      submitted9cCount: count9c,
+      collegeAvg9b,
+      collegeAvg9c,
+      collegeComposite,
+      deptStats
+    };
   }
 }

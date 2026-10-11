@@ -3,15 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PED | Pedagogical & Assessment Practices Evaluation Platform (IQAC)</title>
-    <meta name="description" content="Automated evaluation and quality analytics platform for faculty pedagogical and assessment practice reports, generating individual faculty appraisals and institutional IQAC insights." />
+    <title>PED Analytics | IQAC - St. Joseph's College (Autonomous), Tiruchirappalli</title>
+    <meta name="description" content="Official IQAC Pedagogical Practices and Assessment Components Evaluation Platform for St. Joseph's College (Autonomous), Tiruchirappalli. Supporting Word and PDF document uploads of Annexure 9(b) and 9(c)." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <!-- App Navigation Header -->
+    <!-- Academic Institutional Banner -->
+    <div class="college-topbar">
+      <div class="header-container topbar-inner">
+        <div class="college-identity">
+          <span class="college-crest">🏛️</span>
+          <div>
+            <span class="college-name">St. Joseph's College (Autonomous)</span>
+            <span class="college-sub">Tiruchirappalli - 620 002, Tamil Nadu • Re-accredited by NAAC with A++ Grade</span>
+          </div>
+        </div>
+        <div class="topbar-badge">
+          <span class="cell-tag">IQAC Academic Quality Cell</span>
+          <span class="ay-tag">Academic Year 2025-26</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Header -->
     <header class="app-header">
       <div class="header-container">
         <div class="brand">
@@ -24,38 +41,42 @@
             </svg>
           </div>
           <div>
-            <div class="brand-title">PED Analytics</div>
-            <div class="brand-subtitle">Pedagogical & Assessment Practices Evaluator • IQAC Quality Cell</div>
+            <div class="brand-title">PED Evaluation Portal</div>
+            <div class="brand-subtitle">Pedagogical Practices (9b) & Assessment Components (9c) Evaluator</div>
           </div>
         </div>
 
         <nav class="nav-tabs" role="tablist">
-          <button class="nav-tab active" data-tab="iqac-tab" id="tab-iqac" role="tab" aria-selected="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-            IQAC Institutional Dashboard
+          <button class="nav-tab active" data-tab="departments-tab" id="tab-departments" role="tab" aria-selected="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Departments Hub
           </button>
           <button class="nav-tab" data-tab="faculty-tab" id="tab-faculty" role="tab" aria-selected="false">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Faculty Individual Reports
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Faculty Portfolios
+          </button>
+          <button class="nav-tab" data-tab="iqac-tab" id="tab-iqac" role="tab" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            IQAC College Analytics
           </button>
           <button class="nav-tab" data-tab="upload-tab" id="tab-upload" role="tab" aria-selected="false">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-            Upload & Evaluate Reports
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            Upload Word / PDF
           </button>
           <button class="nav-tab" data-tab="templates-tab" id="tab-templates" role="tab" aria-selected="false">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-            Templates & Guidelines
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+            Download Templates
           </button>
         </nav>
 
         <div class="header-actions">
-          <button id="quick-demo-btn" class="btn btn-secondary btn-sm" title="Reload sample faculty reports for instant demonstration">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-            Reset Demo Data
+          <button id="quick-demo-btn" class="btn btn-secondary btn-sm" title="Restore St. Joseph's College demo faculty submissions">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            Reset Demo
           </button>
-          <button id="export-iqac-summary-btn" class="btn btn-primary btn-sm">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            Export IQAC Dossier
+          <button id="export-college-summary-btn" class="btn btn-primary btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Export IQAC Report
           </button>
         </div>
       </div>
@@ -66,298 +87,291 @@
       <!-- Metric Ribbon -->
       <section class="metric-ribbon">
         <div class="metric-card">
-          <div class="metric-label">Submissions Evaluated</div>
+          <div class="metric-label">College Composite Quality Index</div>
           <div class="metric-value-row">
-            <span class="metric-value" id="stat-total-submissions">0</span>
-            <span class="metric-badge badge-neutral" id="stat-departments-count">5 Depts</span>
-          </div>
-          <div class="metric-subtext">Across Academic Year 2025-26</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-label">Institutional Quality Index</div>
-          <div class="metric-value-row">
-            <span class="metric-value text-emerald" id="stat-avg-score">0.0</span>
+            <span class="metric-value text-emerald" id="stat-college-composite">0.0</span>
             <span class="metric-badge badge-success" id="stat-quality-band">Exemplary</span>
           </div>
-          <div class="metric-subtext">Target: ≥ 80.0 (NAAC Benchmark)</div>
+          <div class="metric-subtext">Aggregated across Annexures 9(b) & 9(c)</div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-label">Higher-Order Bloom's Ratio</div>
+          <div class="metric-label">Departments Audited</div>
           <div class="metric-value-row">
-            <span class="metric-value text-indigo" id="stat-higher-order">0%</span>
-            <span class="metric-badge badge-indigo">Analyze/Eval/Create</span>
+            <span class="metric-value" id="stat-total-depts">6</span>
+            <span class="metric-badge badge-indigo">100% Participating</span>
           </div>
-          <div class="metric-subtext">Outcome-Based Learning Rigor</div>
+          <div class="metric-subtext">School of Computing, Sciences & Management</div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-label">NAAC Criterion 2.3.1 Compliance</div>
+          <div class="metric-label">Annexure 9(b) Pedagogy Reports</div>
           <div class="metric-value-row">
-            <span class="metric-value text-cyan" id="stat-naac-compliance">0%</span>
-            <span class="metric-badge badge-cyan">Student Centric</span>
+            <span class="metric-value text-indigo" id="stat-count-9b">0</span>
+            <span class="metric-badge badge-indigo" id="stat-avg-9b">Avg: 0.0</span>
           </div>
-          <div class="metric-subtext">Experiential & Problem-Solving Adoption</div>
+          <div class="metric-subtext">Active & Student-Centric Methods</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Annexure 9(c) Assessment Reports</div>
+          <div class="metric-value-row">
+            <span class="metric-value text-cyan" id="stat-count-9c">0</span>
+            <span class="metric-badge badge-cyan" id="stat-avg-9c">Avg: 0.0</span>
+          </div>
+          <div class="metric-subtext">Continuous Internal Evaluation (CIE) Rigor</div>
         </div>
       </section>
 
-      <!-- TAB 1: IQAC Institutional Dashboard -->
-      <section id="iqac-tab" class="tab-pane active" role="tabpanel">
-        <div class="section-header">
+      <!-- TAB 1: Departments Hub -->
+      <section id="departments-tab" class="tab-pane active" role="tabpanel">
+        <div class="section-header flex-between">
           <div>
-            <h1 class="section-title">IQAC Institutional Quality Analytics</h1>
-            <p class="section-desc">Executive evaluation of teaching-learning innovations, Bloom's cognitive alignment, and department-level pedagogical benchmarks.</p>
+            <h1 class="section-title">Academic Departments Directory</h1>
+            <p class="section-desc">Departmental quality overview, Head of Department (HOD) oversight, and submission status for Annexures 9(b) & 9(c).</p>
+          </div>
+          <div class="search-box">
+            <input type="text" id="dept-search-input" class="search-input" placeholder="Search department, HOD, or code..." />
+          </div>
+        </div>
+
+        <!-- Departments Grid -->
+        <div class="grid grid-3" id="departments-grid">
+          <!-- Dynamically populated department cards -->
+        </div>
+      </section>
+
+      <!-- TAB 2: Faculty Portfolios (Categorized by Department) -->
+      <section id="faculty-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">Faculty Pedagogical & Assessment Portfolios</h2>
+            <p class="section-desc">Individual faculty reflections on teaching strategies (Annexure 9b) and assessment components (Annexure 9c).</p>
           </div>
           <div class="filter-group">
-            <label for="iqac-dept-filter" class="filter-label">Filter Department:</label>
-            <select id="iqac-dept-filter" class="select-control">
+            <label for="faculty-dept-filter" class="filter-label">Filter Department:</label>
+            <select id="faculty-dept-filter" class="select-control">
               <option value="ALL">All Departments (Institutional)</option>
             </select>
           </div>
         </div>
 
+        <!-- Faculty Selector Ribbon -->
+        <div class="card p-3 mb-4" style="background: rgba(255, 255, 255, 0.02); margin-bottom: 1.5rem;">
+          <div class="flex-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <label for="faculty-select" class="filter-label">Select Faculty Member:</label>
+              <select id="faculty-select" class="select-control select-lg">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            <div class="d-flex gap-2">
+              <button id="print-dossier-btn" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                Print / Save Appraisal Dossier
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Faculty Detailed Dossier View -->
+        <div id="faculty-detail-container">
+          <!-- Dynamically populated detailed dossier -->
+        </div>
+      </section>
+
+      <!-- TAB 3: IQAC College Executive Analytics -->
+      <section id="iqac-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">IQAC College Executive Analytics</h2>
+            <p class="section-desc">Institutional quality benchmarking for St. Joseph's College (Autonomous), NAAC Criterion 2 & NBA compliance.</p>
+          </div>
+        </div>
+
         <!-- Charts Grid -->
         <div class="grid grid-2">
-          <!-- Department Performance Benchmarking -->
+          <!-- Dual Bar Chart: 9b vs 9c -->
           <div class="card chart-card">
             <div class="card-header">
-              <div>
-                <h3 class="card-title">Department-wise Pedagogical & Assessment Score</h3>
-                <p class="card-subtitle">Mean quality score (/100) benchmarked against IQAC minimum threshold (75)</p>
-              </div>
+              <h3 class="card-title">Department Comparison: Pedagogy (9b) vs Assessment (9c)</h3>
+              <p class="card-subtitle">Mean quality scores (/100) benchmarked against IQAC threshold (75)</p>
             </div>
             <div class="chart-container">
-              <canvas id="deptPerformanceChart"></canvas>
+              <canvas id="deptComparisonChart"></canvas>
             </div>
           </div>
 
-          <!-- Pedagogical Innovation Distribution -->
+          <!-- Pedagogical Adoption -->
           <div class="card chart-card">
             <div class="card-header">
-              <div>
-                <h3 class="card-title">Adoption of Pedagogical Methodologies</h3>
-                <p class="card-subtitle">Distribution of active learning, flipped classrooms, and inquiry methods</p>
-              </div>
+              <h3 class="card-title">College Pedagogical Methodology Adoption</h3>
+              <p class="card-subtitle">Distribution of active learning, flipped classrooms, and inquiry strategies</p>
             </div>
             <div class="chart-container">
-              <canvas id="pedagogyDistributionChart"></canvas>
+              <canvas id="pedagogyAdoptionChart"></canvas>
             </div>
           </div>
         </div>
 
-        <!-- NAAC / NBA Quality Compliance Matrix & Bloom's Distribution -->
         <div class="grid grid-2 mt-4">
-          <!-- Bloom's Cognitive Distribution -->
+          <!-- Assessment Types Pie Chart -->
           <div class="card chart-card">
             <div class="card-header">
-              <div>
-                <h3 class="card-title">Institutional Bloom's Cognitive Taxonomy Breakdown</h3>
-                <p class="card-subtitle">Distribution of cognitive demand targeted in course assessment practices</p>
-              </div>
+              <h3 class="card-title">Assessment Components Distribution (9c)</h3>
+              <p class="card-subtitle">Balance of Summative Exams (CIA) vs Formative Checks vs Alternative Projects</p>
             </div>
             <div class="chart-container">
-              <canvas id="bloomsInstitutionChart"></canvas>
+              <canvas id="assessmentTypesChart"></canvas>
             </div>
           </div>
 
-          <!-- Accreditation Readiness & Recommendations -->
+          <!-- NAAC Accreditation Indicators -->
           <div class="card">
             <div class="card-header">
-              <div>
-                <h3 class="card-title">Accreditation Alignment (NAAC Criterion 2 & NBA)</h3>
-                <p class="card-subtitle">Automated compliance indicators based on verified faculty submissions</p>
+              <h3 class="card-title">NAAC Criterion 2 & NBA Accreditation Compliance</h3>
+              <p class="card-subtitle">Automated institutional indicators verified from submitted Annexures</p>
+            </div>
+            <div class="accreditation-list">
+              <div class="accreditation-item">
+                <div class="acc-info">
+                  <div class="acc-title">NAAC 2.3.1: Student-Centric Pedagogical Methods</div>
+                  <div class="acc-desc">Experiential, participative & problem solving adoption (Target: ≥ 80%)</div>
+                </div>
+                <div class="acc-bar-wrap">
+                  <div class="acc-pct text-emerald" id="acc-naac-231">92%</div>
+                  <div class="progress-bar"><div class="progress-fill fill-emerald" style="width: 92%;"></div></div>
+                </div>
+              </div>
+
+              <div class="accreditation-item">
+                <div class="acc-info">
+                  <div class="acc-title">NAAC 2.5.1: CIE Transparency & Rubric-Based Grading</div>
+                  <div class="acc-desc">Announced dates, pre-assessment materials & post-exam feedback (Target: ≥ 85%)</div>
+                </div>
+                <div class="acc-bar-wrap">
+                  <div class="acc-pct text-emerald" id="acc-naac-251">88%</div>
+                  <div class="progress-bar"><div class="progress-fill fill-emerald" style="width: 88%;"></div></div>
+                </div>
+              </div>
+
+              <div class="accreditation-item">
+                <div class="acc-info">
+                  <div class="acc-title">NAAC 2.5.3: Alternative Assessment Reforms</div>
+                  <div class="acc-desc">Open-ended capstone projects, peer reviews & virtual simulations (Target: ≥ 70%)</div>
+                </div>
+                <div class="acc-bar-wrap">
+                  <div class="acc-pct text-indigo" id="acc-naac-253">82%</div>
+                  <div class="progress-bar"><div class="progress-fill fill-indigo" style="width: 82%;"></div></div>
+                </div>
+              </div>
+
+              <div class="accreditation-item">
+                <div class="acc-info">
+                  <div class="acc-title">NBA Criterion 3: Course Outcome (CO1-CO5) Rigor</div>
+                  <div class="acc-desc">Approved syllabus outcomes evaluated across all assessment components (Target: ≥ 75%)</div>
+                </div>
+                <div class="acc-bar-wrap">
+                  <div class="acc-pct text-cyan" id="acc-nba-crit3">94%</div>
+                  <div class="progress-bar"><div class="progress-fill fill-cyan" style="width: 94%;"></div></div>
+                </div>
               </div>
             </div>
-            <div class="accreditation-list" id="accreditation-indicators">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Institutional Faculty Leaderboard / Summary Table -->
-        <div class="card mt-4">
-          <div class="card-header flex-between">
-            <div>
-              <h3 class="card-title">Faculty Pedagogical Practices Audit Registry</h3>
-              <p class="card-subtitle">Individual scores, methods, and evaluation status across the institution</p>
-            </div>
-            <div class="search-box">
-              <input type="text" id="faculty-search-input" class="search-input" placeholder="Search faculty, course, or method..." />
-            </div>
-          </div>
-
-          <div class="table-responsive">
-            <table class="data-table" id="iqac-faculty-table">
-              <thead>
-                <tr>
-                  <th>Faculty & ID</th>
-                  <th>Department</th>
-                  <th>Course Title</th>
-                  <th>Pedagogical Practice</th>
-                  <th>Bloom's Focus</th>
-                  <th>Quality Score</th>
-                  <th>Status Band</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="iqac-faculty-table-body">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
           </div>
         </div>
       </section>
 
-      <!-- TAB 2: Faculty Individual Reports -->
-      <section id="faculty-tab" class="tab-pane" role="tabpanel">
-        <div class="section-header flex-between">
-          <div>
-            <h2 class="section-title">Individual Faculty Pedagogical Appraisal</h2>
-            <p class="section-desc">Detailed multi-criteria scorecard, Bloom's cognitive distribution, strengths, and actionable IQAC feedback.</p>
-          </div>
-          <div class="faculty-picker-wrap">
-            <label for="faculty-select" class="filter-label">Select Faculty Member:</label>
-            <select id="faculty-select" class="select-control select-lg">
-              <!-- Dynamically populated -->
-            </select>
-            <button id="print-dossier-btn" class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-              Print / Save Dossier
-            </button>
-          </div>
-        </div>
-
-        <div id="faculty-detail-container">
-          <!-- Dynamically populated dossier view -->
-        </div>
-      </section>
-
-      <!-- TAB 3: Upload & Evaluate Reports -->
+      <!-- TAB 4: Upload & Evaluate (Word / PDF / JSON) -->
       <section id="upload-tab" class="tab-pane" role="tabpanel">
         <div class="section-header">
           <div>
-            <h2 class="section-title">Upload & Automated Evaluation Hub</h2>
-            <p class="section-desc">Submit faculty pedagogical reports in CSV or JSON template format for immediate multi-criteria scoring and IQAC integration.</p>
+            <h2 class="section-title">Upload Faculty Submissions (Word / PDF Documents)</h2>
+            <p class="section-desc">Faculty or HODs can directly upload filled <strong>Word (.docx)</strong> or <strong>PDF (.pdf)</strong> files of Annexure 9(b) or 9(c). The system automatically parses fields, assigns them to the faculty member, and performs multi-criteria scoring.</p>
           </div>
         </div>
 
         <div class="grid grid-2">
-          <!-- Upload Zone -->
+          <!-- File Dropzone -->
           <div class="card">
-            <h3 class="card-title">Upload Faculty Report Files</h3>
-            <p class="card-subtitle">Upload completed template files (supports <code>.json</code> and <code>.csv</code> single or batch files).</p>
+            <h3 class="card-title">Upload Completed Document</h3>
+            <p class="card-subtitle">Supports <strong>.docx</strong>, <strong>.doc</strong>, <strong>.pdf</strong>, <strong>.json</strong>, and <strong>.csv</strong></p>
 
             <div class="dropzone" id="file-dropzone">
-              <input type="file" id="file-input" accept=".json,.csv" multiple class="file-input-hidden" />
+              <input type="file" id="file-input" accept=".docx,.doc,.pdf,.json,.csv" multiple class="file-input-hidden" />
               <div class="dropzone-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>
                 </svg>
               </div>
               <div class="dropzone-text">
-                <span class="dropzone-title">Click to browse or drag and drop report file here</span>
-                <span class="dropzone-hint">Supports JSON and CSV templates generated from this platform</span>
+                <span class="dropzone-title">Click to browse or drag and drop Word / PDF file here</span>
+                <span class="dropzone-hint">Automatically identifies Annexure 9(b) (Pedagogy) or Annexure 9(c) (Assessment)</span>
               </div>
             </div>
 
-            <div class="quick-sample-box">
-              <span>Need test files?</span>
-              <button id="load-sample-upload-btn" class="btn btn-outline btn-sm">Load Exemplary Sample Report</button>
-              <button id="load-developing-upload-btn" class="btn btn-outline btn-sm">Load Developing Report (Gaps Identified)</button>
+            <div class="quick-sample-box mt-3">
+              <span>Test with official templates:</span>
+              <button id="test-parse-9b-btn" class="btn btn-outline btn-sm">Load & Evaluate Annexure 9(b) Word Doc</button>
+              <button id="test-parse-9c-btn" class="btn btn-outline btn-sm">Load & Evaluate Annexure 9(c) Word Doc</button>
             </div>
           </div>
 
-          <!-- Direct Form Evaluation / Manual Entry -->
+          <!-- Quick Submission Form / Direct Interactive Entry -->
           <div class="card">
             <h3 class="card-title">Interactive Faculty Submission Form</h3>
-            <p class="card-subtitle">Evaluate a professor's pedagogical report interactively with real-time scoring.</p>
+            <p class="card-subtitle">Manual entry option for immediate scoring into the departmental registry.</p>
 
             <form id="manual-eval-form" class="evaluation-form">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="form-faculty-name">Faculty Name *</label>
-                  <input type="text" id="form-faculty-name" required placeholder="e.g. Dr. Rajesh Sharma" class="form-input" />
+                  <label for="form-annexure-type">Annexure Type *</label>
+                  <select id="form-annexure-type" class="form-input" required>
+                    <option value="9B">Annexure 9(b) - Pedagogical Practices Reflection</option>
+                    <option value="9C">Annexure 9(c) - Assessment Components Reflection</option>
+                  </select>
                 </div>
-                <div class="form-group">
-                  <label for="form-faculty-id">Employee / Faculty ID *</label>
-                  <input type="text" id="form-faculty-id" required placeholder="e.g. FAC-CSE-104" class="form-input" />
-                </div>
-              </div>
-
-              <div class="form-row">
                 <div class="form-group">
                   <label for="form-dept">Department *</label>
                   <select id="form-dept" class="form-input" required>
-                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
-                    <option value="Electronics & Communication">Electronics & Communication</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
-                    <option value="Civil Engineering">Civil Engineering</option>
-                    <option value="Artificial Intelligence & Data Science">Artificial Intelligence & Data Science</option>
+                    <option value="Computer Science">Computer Science</option>
                     <option value="Information Technology">Information Technology</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="form-course">Course Title & Code *</label>
-                  <input type="text" id="form-course" required placeholder="e.g. CS302 Database Management Systems" class="form-input" />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="form-pedagogy">Pedagogical Practice *</label>
-                  <select id="form-pedagogy" class="form-input" required>
-                    <option value="Flipped Classroom">Flipped Classroom</option>
-                    <option value="Project-Based Learning (PjBL)">Project-Based Learning (PjBL)</option>
-                    <option value="Problem-Based Learning (PBL)">Problem-Based Learning (PBL)</option>
-                    <option value="Think-Pair-Share & Peer Instruction">Think-Pair-Share & Peer Instruction</option>
-                    <option value="Simulation & Virtual Lab Sprints">Simulation & Virtual Lab Sprints</option>
-                    <option value="Gamified Quizzes & Hackathons">Gamified Quizzes & Hackathons</option>
-                    <option value="Case Study Analysis">Case Study Analysis</option>
-                    <option value="Traditional Lecture with Chalk/Talk">Traditional Lecture with Chalk/Talk</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="form-assessment">Assessment Method *</label>
-                  <select id="form-assessment" class="form-input" required>
-                    <option value="Rubric-Based Open-Ended Projects">Rubric-Based Open-Ended Projects</option>
-                    <option value="Continuous Coding Sprints & Peer Review">Continuous Coding Sprints & Peer Review</option>
-                    <option value="Formative In-Class Quizzes & LMS Reflections">Formative In-Class Quizzes & LMS Reflections</option>
-                    <option value="Hardware Prototype Demonstration">Hardware Prototype Demonstration</option>
-                    <option value="Written Mid-Term & End-Term Only">Written Mid-Term & End-Term Only</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Management Studies">Management Studies</option>
                   </select>
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
-                  <label for="form-blooms">Primary Bloom's Levels Targeted *</label>
-                  <input type="text" id="form-blooms" required placeholder="e.g. Apply, Analyze, Create" class="form-input" />
+                  <label for="form-faculty-name">Faculty Name *</label>
+                  <input type="text" id="form-faculty-name" required placeholder="e.g. Dr. S. Joseph" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label for="form-ict">ICT & Digital Tools Used</label>
-                  <input type="text" id="form-ict" placeholder="e.g. Google Colab, Moodle LMS, GitHub Classroom" class="form-input" />
+                  <label for="form-course">Course Code & Title *</label>
+                  <input type="text" id="form-course" required placeholder="e.g. 23PCS301 Advanced Algorithms" class="form-input" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="form-method">Teaching / Assessment Method *</label>
+                  <input type="text" id="form-method" required placeholder="e.g. Flipped Classroom & Timed Peer Sprints" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="form-tools">Tools & Materials Used</label>
+                  <input type="text" id="form-tools" placeholder="e.g. Moodle LMS, Virtual Lab, LeetCode" class="form-input" />
                 </div>
               </div>
 
               <div class="form-group">
-                <label for="form-practice-desc">Description of Practice & Execution Proof</label>
-                <textarea id="form-practice-desc" rows="2" class="form-input" placeholder="Brief outline of how students participated, duration, and geo-tagged/LMS evidence link..."></textarea>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="form-feedback-score">Student Feedback Rating (1-5)</label>
-                  <input type="number" id="form-feedback-score" min="1" max="5" step="0.1" value="4.5" class="form-input" />
-                </div>
-                <div class="form-group">
-                  <label for="form-remedial">Remedial Action for Slow Learners</label>
-                  <input type="text" id="form-remedial" placeholder="e.g. Peer tutoring, recorded video walk-throughs" class="form-input" />
-                </div>
+                <label for="form-reflection">Faculty Reflection & Impact</label>
+                <textarea id="form-reflection" rows="2" class="form-input" placeholder="Describe planning purpose, in-class student engagement flow, and observed learning impact..."></textarea>
               </div>
 
               <button type="submit" class="btn btn-primary btn-block">
-                Evaluate & Add to IQAC Registry
+                Evaluate & Save to Department
               </button>
             </form>
           </div>
@@ -369,110 +383,68 @@
         </div>
       </section>
 
-      <!-- TAB 4: Templates & Guidelines -->
+      <!-- TAB 5: Download Official Templates -->
       <section id="templates-tab" class="tab-pane" role="tabpanel">
         <div class="section-header">
           <div>
-            <h2 class="section-title">Standard Pedagogical & Assessment Templates</h2>
-            <p class="section-desc">Download official IQAC templates for distribution to academic departments and professors.</p>
+            <h2 class="section-title">Official St. Joseph's College IQAC Templates</h2>
+            <p class="section-desc">Download standard institutional Microsoft Word (.docx) templates distributed to faculty and departments.</p>
           </div>
         </div>
 
         <div class="grid grid-3">
-          <div class="card template-card">
-            <div class="template-icon json-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
-            </div>
-            <h3 class="card-title">JSON Report Template</h3>
-            <p class="card-subtitle">Machine-readable format for faculty LMS export or API-based direct uploads.</p>
-            <ul class="template-features">
-              <li>Full metadata schema & validation</li>
-              <li>CO-PO mapping structure included</li>
-              <li>Batch multi-faculty array support</li>
-            </ul>
-            <button id="download-json-template-btn" class="btn btn-outline btn-block mt-3">
-              Download JSON Template (.json)
-            </button>
-          </div>
-
-          <div class="card template-card">
-            <div class="template-icon csv-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            </div>
-            <h3 class="card-title">Spreadsheet (CSV) Template</h3>
-            <p class="card-subtitle">Excel / Google Sheets compatible template for departmental HOD bulk collections.</p>
-            <ul class="template-features">
-              <li>Easy to open in Excel or Google Sheets</li>
-              <li>Pre-formatted column headers</li>
-              <li>Sample row included for guidance</li>
-            </ul>
-            <button id="download-csv-template-btn" class="btn btn-outline btn-block mt-3">
-              Download CSV Template (.csv)
-            </button>
-          </div>
-
+          <!-- Template 9(b) -->
           <div class="card template-card">
             <div class="template-icon doc-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
             </div>
-            <h3 class="card-title">Documentation & Rubrics Guide</h3>
-            <p class="card-subtitle">Comprehensive guidelines outlining the 5 evaluation dimensions and scoring weights.</p>
+            <h3 class="card-title">Annexure 9(b) Template</h3>
+            <p class="card-subtitle"><strong>Faculty Reflection on Pedagogical Practices</strong> (MS Word Format)</p>
             <ul class="template-features">
-              <li>NAAC Criterion 2 & NBA Rubrics</li>
-              <li>Bloom's Taxonomy action verbs list</li>
-              <li>Best practice benchmarks & examples</li>
+              <li>Section A: Course & Faculty Details</li>
+              <li>Section B: Pedagogical Approach & Tools</li>
+              <li>Planning, In-Class Delivery & Impact Reflections</li>
+              <li>Section D: Evidence Soft-Copy Attachments</li>
             </ul>
-            <button id="download-doc-guide-btn" class="btn btn-outline btn-block mt-3">
+            <a href="/templates/Annexure_9_b_Template_Pedagogy_Approach.docx" download class="btn btn-primary btn-block mt-3">
+              Download Annexure 9(b) (.docx)
+            </a>
+          </div>
+
+          <!-- Template 9(c) -->
+          <div class="card template-card">
+            <div class="template-icon doc-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+            </div>
+            <h3 class="card-title">Annexure 9(c) Template</h3>
+            <p class="card-subtitle"><strong>Faculty Reflection on Assessment Components</strong> (MS Word Format)</p>
+            <ul class="template-features">
+              <li>Course Outcomes (CO1 to CO5) Schema</li>
+              <li>Summative / Formative / Alternative Matrix</li>
+              <li>Pre-assessment & Post-assessment Materials</li>
+              <li>Faculty Assessment Process Reflections</li>
+            </ul>
+            <a href="/templates/Annexure_9_c_Template_Assessment Component.docx" download class="btn btn-primary btn-block mt-3">
+              Download Annexure 9(c) (.docx)
+            </a>
+          </div>
+
+          <!-- Guidelines & Rubrics Guide -->
+          <div class="card template-card">
+            <div class="template-icon json-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+            </div>
+            <h3 class="card-title">IQAC Rubric Guidelines</h3>
+            <p class="card-subtitle">Official scoring criteria and accreditation benchmark guide</p>
+            <ul class="template-features">
+              <li>NAAC Criterion 2.3.1, 2.5.1, 2.5.3 weights</li>
+              <li>NBA Criterion 3 Outcome Rigor</li>
+              <li>Bloom's Taxonomy action verbs list</li>
+              <li>Exemplary vs Developing benchmarks</li>
+            </ul>
+            <button id="download-guidelines-btn" class="btn btn-outline btn-block mt-3">
               Download Guidelines (.md)
             </button>
-          </div>
-        </div>
-
-        <!-- Evaluation Rubric Breakdown Card -->
-        <div class="card mt-4">
-          <h3 class="card-title">IQAC Pedagogical & Assessment Evaluation Rubric Matrix</h3>
-          <p class="card-subtitle">How every submitted report is systematically scored out of 100 points</p>
-          
-          <div class="rubric-grid mt-3">
-            <div class="rubric-item">
-              <div class="rubric-header">
-                <span class="rubric-name">1. Pedagogical Innovation & Active Learning</span>
-                <span class="rubric-weight">25 Pts</span>
-              </div>
-              <p class="rubric-desc">Shift from teacher-centric to student-centric learning: Flipped classroom, project-based learning, inquiry, collaborative problem solving.</p>
-            </div>
-
-            <div class="rubric-item">
-              <div class="rubric-header">
-                <span class="rubric-name">2. Bloom's Taxonomy Cognitive Demand</span>
-                <span class="rubric-weight">25 Pts</span>
-              </div>
-              <p class="rubric-desc">Proportion of assessment targeting Higher-Order Thinking Skills (HOTS: Analyze, Evaluate, Create) vs Lower-Order (Remember, Understand).</p>
-            </div>
-
-            <div class="rubric-item">
-              <div class="rubric-header">
-                <span class="rubric-name">3. Outcome-Based Education (OBE) & CO-PO Rigor</span>
-                <span class="rubric-weight">20 Pts</span>
-              </div>
-              <p class="rubric-desc">Alignment with Course Outcomes (COs) and Program Outcomes (POs), transparent rubrics for grading, attainment threshold tracking.</p>
-            </div>
-
-            <div class="rubric-item">
-              <div class="rubric-header">
-                <span class="rubric-name">4. ICT Tools & Digital Learning Integration</span>
-                <span class="rubric-weight">15 Pts</span>
-              </div>
-              <p class="rubric-desc">Effective deployment of LMS (Moodle/Canvas), interactive coding pods, virtual labs, simulation tools, or digital peer reviews.</p>
-            </div>
-
-            <div class="rubric-item">
-              <div class="rubric-header">
-                <span class="rubric-name">5. Student Feedback & Remedial Loop</span>
-                <span class="rubric-weight">15 Pts</span>
-              </div>
-              <p class="rubric-desc">Student satisfaction rating, evidence of continuous feedback, dedicated remedial actions for slow learners, and enrichment for fast learners.</p>
-            </div>
           </div>
         </div>
       </section>
@@ -485,7 +457,7 @@
         <div class="modal-header">
           <div>
             <h3 class="modal-title">Official Faculty Pedagogical Appraisal Dossier</h3>
-            <span class="modal-subtitle">Internal Quality Assurance Cell (IQAC) Academic Audit</span>
+            <span class="modal-subtitle">Internal Quality Assurance Cell (IQAC) • St. Joseph's College (Autonomous), Tiruchirappalli</span>
           </div>
           <div class="modal-actions">
             <button id="modal-print-btn" class="btn btn-primary btn-sm">
