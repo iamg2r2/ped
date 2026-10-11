@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PED | Pedagogical & Assessment Practices Evaluation Platform (IQAC)</title>
+    <meta name="description" content="Automated evaluation and quality analytics platform for faculty pedagogical and assessment practice reports, generating individual faculty appraisals and institutional IQAC insights." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- App Navigation Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+              <path d="M6 6h10"></path>
+              <path d="M6 10h10"></path>
+              <path d="m9 16 2 2 4-4"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="brand-title">PED Analytics</div>
+            <div class="brand-subtitle">Pedagogical & Assessment Practices Evaluator • IQAC Quality Cell</div>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" role="tablist">
+          <button class="nav-tab active" data-tab="iqac-tab" id="tab-iqac" role="tab" aria-selected="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            IQAC Institutional Dashboard
+          </button>
+          <button class="nav-tab" data-tab="faculty-tab" id="tab-faculty" role="tab" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Faculty Individual Reports
+          </button>
+          <button class="nav-tab" data-tab="upload-tab" id="tab-upload" role="tab" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            Upload & Evaluate Reports
+          </button>
+          <button class="nav-tab" data-tab="templates-tab" id="tab-templates" role="tab" aria-selected="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+            Templates & Guidelines
+          </button>
+        </nav>
+
+        <div class="header-actions">
+          <button id="quick-demo-btn" class="btn btn-secondary btn-sm" title="Reload sample faculty reports for instant demonstration">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            Reset Demo Data
+          </button>
+          <button id="export-iqac-summary-btn" class="btn btn-primary btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Export IQAC Dossier
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+      <!-- Metric Ribbon -->
+      <section class="metric-ribbon">
+        <div class="metric-card">
+          <div class="metric-label">Submissions Evaluated</div>
+          <div class="metric-value-row">
+            <span class="metric-value" id="stat-total-submissions">0</span>
+            <span class="metric-badge badge-neutral" id="stat-departments-count">5 Depts</span>
+          </div>
+          <div class="metric-subtext">Across Academic Year 2025-26</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Institutional Quality Index</div>
+          <div class="metric-value-row">
+            <span class="metric-value text-emerald" id="stat-avg-score">0.0</span>
+            <span class="metric-badge badge-success" id="stat-quality-band">Exemplary</span>
+          </div>
+          <div class="metric-subtext">Target: ≥ 80.0 (NAAC Benchmark)</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">Higher-Order Bloom's Ratio</div>
+          <div class="metric-value-row">
+            <span class="metric-value text-indigo" id="stat-higher-order">0%</span>
+            <span class="metric-badge badge-indigo">Analyze/Eval/Create</span>
+          </div>
+          <div class="metric-subtext">Outcome-Based Learning Rigor</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">NAAC Criterion 2.3.1 Compliance</div>
+          <div class="metric-value-row">
+            <span class="metric-value text-cyan" id="stat-naac-compliance">0%</span>
+            <span class="metric-badge badge-cyan">Student Centric</span>
+          </div>
+          <div class="metric-subtext">Experiential & Problem-Solving Adoption</div>
+        </div>
+      </section>
+
+      <!-- TAB 1: IQAC Institutional Dashboard -->
+      <section id="iqac-tab" class="tab-pane active" role="tabpanel">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title">IQAC Institutional Quality Analytics</h1>
+            <p class="section-desc">Executive evaluation of teaching-learning innovations, Bloom's cognitive alignment, and department-level pedagogical benchmarks.</p>
+          </div>
+          <div class="filter-group">
+            <label for="iqac-dept-filter" class="filter-label">Filter Department:</label>
+            <select id="iqac-dept-filter" class="select-control">
+              <option value="ALL">All Departments (Institutional)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-2">
+          <!-- Department Performance Benchmarking -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Department-wise Pedagogical & Assessment Score</h3>
+                <p class="card-subtitle">Mean quality score (/100) benchmarked against IQAC minimum threshold (75)</p>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="deptPerformanceChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Pedagogical Innovation Distribution -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Adoption of Pedagogical Methodologies</h3>
+                <p class="card-subtitle">Distribution of active learning, flipped classrooms, and inquiry methods</p>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="pedagogyDistributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- NAAC / NBA Quality Compliance Matrix & Bloom's Distribution -->
+        <div class="grid grid-2 mt-4">
+          <!-- Bloom's Cognitive Distribution -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Institutional Bloom's Cognitive Taxonomy Breakdown</h3>
+                <p class="card-subtitle">Distribution of cognitive demand targeted in course assessment practices</p>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="bloomsInstitutionChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Accreditation Readiness & Recommendations -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Accreditation Alignment (NAAC Criterion 2 & NBA)</h3>
+                <p class="card-subtitle">Automated compliance indicators based on verified faculty submissions</p>
+              </div>
+            </div>
+            <div class="accreditation-list" id="accreditation-indicators">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Institutional Faculty Leaderboard / Summary Table -->
+        <div class="card mt-4">
+          <div class="card-header flex-between">
+            <div>
+              <h3 class="card-title">Faculty Pedagogical Practices Audit Registry</h3>
+              <p class="card-subtitle">Individual scores, methods, and evaluation status across the institution</p>
+            </div>
+            <div class="search-box">
+              <input type="text" id="faculty-search-input" class="search-input" placeholder="Search faculty, course, or method..." />
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="iqac-faculty-table">
+              <thead>
+                <tr>
+                  <th>Faculty & ID</th>
+                  <th>Department</th>
+                  <th>Course Title</th>
+                  <th>Pedagogical Practice</th>
+                  <th>Bloom's Focus</th>
+                  <th>Quality Score</th>
+                  <th>Status Band</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="iqac-faculty-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Faculty Individual Reports -->
+      <section id="faculty-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">Individual Faculty Pedagogical Appraisal</h2>
+            <p class="section-desc">Detailed multi-criteria scorecard, Bloom's cognitive distribution, strengths, and actionable IQAC feedback.</p>
+          </div>
+          <div class="faculty-picker-wrap">
+            <label for="faculty-select" class="filter-label">Select Faculty Member:</label>
+            <select id="faculty-select" class="select-control select-lg">
+              <!-- Dynamically populated -->
+            </select>
+            <button id="print-dossier-btn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print / Save Dossier
+            </button>
+          </div>
+        </div>
+
+        <div id="faculty-detail-container">
+          <!-- Dynamically populated dossier view -->
+        </div>
+      </section>
+
+      <!-- TAB 3: Upload & Evaluate Reports -->
+      <section id="upload-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Upload & Automated Evaluation Hub</h2>
+            <p class="section-desc">Submit faculty pedagogical reports in CSV or JSON template format for immediate multi-criteria scoring and IQAC integration.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <!-- Upload Zone -->
+          <div class="card">
+            <h3 class="card-title">Upload Faculty Report Files</h3>
+            <p class="card-subtitle">Upload completed template files (supports <code>.json</code> and <code>.csv</code> single or batch files).</p>
+
+            <div class="dropzone" id="file-dropzone">
+              <input type="file" id="file-input" accept=".json,.csv" multiple class="file-input-hidden" />
+              <div class="dropzone-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>
+                </svg>
+              </div>
+              <div class="dropzone-text">
+                <span class="dropzone-title">Click to browse or drag and drop report file here</span>
+                <span class="dropzone-hint">Supports JSON and CSV templates generated from this platform</span>
+              </div>
+            </div>
+
+            <div class="quick-sample-box">
+              <span>Need test files?</span>
+              <button id="load-sample-upload-btn" class="btn btn-outline btn-sm">Load Exemplary Sample Report</button>
+              <button id="load-developing-upload-btn" class="btn btn-outline btn-sm">Load Developing Report (Gaps Identified)</button>
+            </div>
+          </div>
+
+          <!-- Direct Form Evaluation / Manual Entry -->
+          <div class="card">
+            <h3 class="card-title">Interactive Faculty Submission Form</h3>
+            <p class="card-subtitle">Evaluate a professor's pedagogical report interactively with real-time scoring.</p>
+
+            <form id="manual-eval-form" class="evaluation-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="form-faculty-name">Faculty Name *</label>
+                  <input type="text" id="form-faculty-name" required placeholder="e.g. Dr. Rajesh Sharma" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="form-faculty-id">Employee / Faculty ID *</label>
+                  <input type="text" id="form-faculty-id" required placeholder="e.g. FAC-CSE-104" class="form-input" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="form-dept">Department *</label>
+                  <select id="form-dept" class="form-input" required>
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Electronics & Communication">Electronics & Communication</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Artificial Intelligence & Data Science">Artificial Intelligence & Data Science</option>
+                    <option value="Information Technology">Information Technology</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="form-course">Course Title & Code *</label>
+                  <input type="text" id="form-course" required placeholder="e.g. CS302 Database Management Systems" class="form-input" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="form-pedagogy">Pedagogical Practice *</label>
+                  <select id="form-pedagogy" class="form-input" required>
+                    <option value="Flipped Classroom">Flipped Classroom</option>
+                    <option value="Project-Based Learning (PjBL)">Project-Based Learning (PjBL)</option>
+                    <option value="Problem-Based Learning (PBL)">Problem-Based Learning (PBL)</option>
+                    <option value="Think-Pair-Share & Peer Instruction">Think-Pair-Share & Peer Instruction</option>
+                    <option value="Simulation & Virtual Lab Sprints">Simulation & Virtual Lab Sprints</option>
+                    <option value="Gamified Quizzes & Hackathons">Gamified Quizzes & Hackathons</option>
+                    <option value="Case Study Analysis">Case Study Analysis</option>
+                    <option value="Traditional Lecture with Chalk/Talk">Traditional Lecture with Chalk/Talk</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="form-assessment">Assessment Method *</label>
+                  <select id="form-assessment" class="form-input" required>
+                    <option value="Rubric-Based Open-Ended Projects">Rubric-Based Open-Ended Projects</option>
+                    <option value="Continuous Coding Sprints & Peer Review">Continuous Coding Sprints & Peer Review</option>
+                    <option value="Formative In-Class Quizzes & LMS Reflections">Formative In-Class Quizzes & LMS Reflections</option>
+                    <option value="Hardware Prototype Demonstration">Hardware Prototype Demonstration</option>
+                    <option value="Written Mid-Term & End-Term Only">Written Mid-Term & End-Term Only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="form-blooms">Primary Bloom's Levels Targeted *</label>
+                  <input type="text" id="form-blooms" required placeholder="e.g. Apply, Analyze, Create" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="form-ict">ICT & Digital Tools Used</label>
+                  <input type="text" id="form-ict" placeholder="e.g. Google Colab, Moodle LMS, GitHub Classroom" class="form-input" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="form-practice-desc">Description of Practice & Execution Proof</label>
+                <textarea id="form-practice-desc" rows="2" class="form-input" placeholder="Brief outline of how students participated, duration, and geo-tagged/LMS evidence link..."></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="form-feedback-score">Student Feedback Rating (1-5)</label>
+                  <input type="number" id="form-feedback-score" min="1" max="5" step="0.1" value="4.5" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label for="form-remedial">Remedial Action for Slow Learners</label>
+                  <input type="text" id="form-remedial" placeholder="e.g. Peer tutoring, recorded video walk-throughs" class="form-input" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                Evaluate & Add to IQAC Registry
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Evaluation Results Banner -->
+        <div id="upload-evaluation-result" class="evaluation-result-box hidden mt-4">
+          <!-- Populated after upload/evaluation -->
+        </div>
+      </section>
+
+      <!-- TAB 4: Templates & Guidelines -->
+      <section id="templates-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Standard Pedagogical & Assessment Templates</h2>
+            <p class="section-desc">Download official IQAC templates for distribution to academic departments and professors.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card template-card">
+            <div class="template-icon json-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+            </div>
+            <h3 class="card-title">JSON Report Template</h3>
+            <p class="card-subtitle">Machine-readable format for faculty LMS export or API-based direct uploads.</p>
+            <ul class="template-features">
+              <li>Full metadata schema & validation</li>
+              <li>CO-PO mapping structure included</li>
+              <li>Batch multi-faculty array support</li>
+            </ul>
+            <button id="download-json-template-btn" class="btn btn-outline btn-block mt-3">
+              Download JSON Template (.json)
+            </button>
+          </div>
+
+          <div class="card template-card">
+            <div class="template-icon csv-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            </div>
+            <h3 class="card-title">Spreadsheet (CSV) Template</h3>
+            <p class="card-subtitle">Excel / Google Sheets compatible template for departmental HOD bulk collections.</p>
+            <ul class="template-features">
+              <li>Easy to open in Excel or Google Sheets</li>
+              <li>Pre-formatted column headers</li>
+              <li>Sample row included for guidance</li>
+            </ul>
+            <button id="download-csv-template-btn" class="btn btn-outline btn-block mt-3">
+              Download CSV Template (.csv)
+            </button>
+          </div>
+
+          <div class="card template-card">
+            <div class="template-icon doc-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg>
+            </div>
+            <h3 class="card-title">Documentation & Rubrics Guide</h3>
+            <p class="card-subtitle">Comprehensive guidelines outlining the 5 evaluation dimensions and scoring weights.</p>
+            <ul class="template-features">
+              <li>NAAC Criterion 2 & NBA Rubrics</li>
+              <li>Bloom's Taxonomy action verbs list</li>
+              <li>Best practice benchmarks & examples</li>
+            </ul>
+            <button id="download-doc-guide-btn" class="btn btn-outline btn-block mt-3">
+              Download Guidelines (.md)
+            </button>
+          </div>
+        </div>
+
+        <!-- Evaluation Rubric Breakdown Card -->
+        <div class="card mt-4">
+          <h3 class="card-title">IQAC Pedagogical & Assessment Evaluation Rubric Matrix</h3>
+          <p class="card-subtitle">How every submitted report is systematically scored out of 100 points</p>
+          
+          <div class="rubric-grid mt-3">
+            <div class="rubric-item">
+              <div class="rubric-header">
+                <span class="rubric-name">1. Pedagogical Innovation & Active Learning</span>
+                <span class="rubric-weight">25 Pts</span>
+              </div>
+              <p class="rubric-desc">Shift from teacher-centric to student-centric learning: Flipped classroom, project-based learning, inquiry, collaborative problem solving.</p>
+            </div>
+
+            <div class="rubric-item">
+              <div class="rubric-header">
+                <span class="rubric-name">2. Bloom's Taxonomy Cognitive Demand</span>
+                <span class="rubric-weight">25 Pts</span>
+              </div>
+              <p class="rubric-desc">Proportion of assessment targeting Higher-Order Thinking Skills (HOTS: Analyze, Evaluate, Create) vs Lower-Order (Remember, Understand).</p>
+            </div>
+
+            <div class="rubric-item">
+              <div class="rubric-header">
+                <span class="rubric-name">3. Outcome-Based Education (OBE) & CO-PO Rigor</span>
+                <span class="rubric-weight">20 Pts</span>
+              </div>
+              <p class="rubric-desc">Alignment with Course Outcomes (COs) and Program Outcomes (POs), transparent rubrics for grading, attainment threshold tracking.</p>
+            </div>
+
+            <div class="rubric-item">
+              <div class="rubric-header">
+                <span class="rubric-name">4. ICT Tools & Digital Learning Integration</span>
+                <span class="rubric-weight">15 Pts</span>
+              </div>
+              <p class="rubric-desc">Effective deployment of LMS (Moodle/Canvas), interactive coding pods, virtual labs, simulation tools, or digital peer reviews.</p>
+            </div>
+
+            <div class="rubric-item">
+              <div class="rubric-header">
+                <span class="rubric-name">5. Student Feedback & Remedial Loop</span>
+                <span class="rubric-weight">15 Pts</span>
+              </div>
+              <p class="rubric-desc">Student satisfaction rating, evidence of continuous feedback, dedicated remedial actions for slow learners, and enrichment for fast learners.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal for Printable / Exportable Official Faculty Appraisal Dossier -->
+    <div id="dossier-modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Official Faculty Pedagogical Appraisal Dossier</h3>
+            <span class="modal-subtitle">Internal Quality Assurance Cell (IQAC) Academic Audit</span>
+          </div>
+          <div class="modal-actions">
+            <button id="modal-print-btn" class="btn btn-primary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print Document
+            </button>
+            <button id="modal-close-btn" class="btn btn-icon" aria-label="Close modal">✕</button>
+          </div>
+        </div>
+        <div class="modal-body" id="modal-content-area">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
