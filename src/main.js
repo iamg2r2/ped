@@ -1,21 +1,51 @@
 /**
- * PED PLATFORM - MAIN CONTROLLER
+ * PED PLATFORM - AUTOMATED BULK DOCUMENT INGESTION & EVALUATION ENGINE
  * St. Joseph's College (Autonomous), Tiruchirappalli - IQAC Platform
- * Pastel Interface • Department Selector • Reliable Name Reflection
- * Word (.docx) & PDF (.pdf) Ingestion • Working CSV Exports
+ * 
+ * Features:
+ * 1. Bulk background checking of 600+ documents (drag-and-drop, multi-file, or folder upload).
+ * 2. Zero manual form typing: directly parses inner tables, Course Outcomes, and reflection text.
+ * 3. Automatic classification into departments and faculty portfolios.
+ * 4. Strict IQAC scoring rubrics: 0 credit for missing content or name-only documents.
+ * 5. Asynchronous non-blocking queue with live progress bar and status counters.
+ * 6. Live updates across Submissions, Faculty Reports, and IQAC Analytics.
+ * 7. Real exports: Multi-sheet Excel workbook, CSV logs, printable PDF dossiers.
  */
 
 import { DEPARTMENTS_DATA, INITIAL_FACULTY_RECORDS, COLLEGE_INFO } from './data/initialData.js';
 import { EvaluatorEngine } from './services/evaluator.js';
 import { DocumentParser } from './services/documentParser.js';
+import { 
+  RUBRIC_9B_CONFIG, 
+  RUBRIC_9C_CONFIG, 
+  STANDARDIZED_PEDAGOGIES, 
+  STANDARDIZED_ASSESSMENTS,
+  mapToStandardPedagogies,
+  mapToStandardAssessments
+} from './services/rubrics.js';
 
 class PedApp {
   constructor() {
     this.departments = [...DEPARTMENTS_DATA];
     this.facultyRecords = [];
+    this.submissionsLog = [];
     this.selectedDepartment = "Computer Science";
     this.selectedFacultyId = null;
-    this.activeParsedDocument = null;
+    this.isProcessingBatch = false;
+
+    // Filters for Submissions Table
+    this.submissionSearchQuery = "";
+    this.submissionStatusFilter = "ALL";
+    this.submissionDeptFilter = "ALL";
+
+    // Filters for IQAC Analytics
+    this.analyticsFilters = {
+      academicYear: "ALL",
+      semester: "ALL",
+      department: "ALL",
+      programme: "ALL",
+      annexure: "ALL"
+    };
 
     this.init();
   }
@@ -28,47 +58,110 @@ class PedApp {
   }
 
   loadState() {
-    const saved = localStorage.getItem("ped_college_faculty");
+    const saved = localStorage.getItem("ped_college_faculty_v3");
     if (saved) {
       try {
         this.facultyRecords = JSON.parse(saved);
       } catch (e) {
-        this.facultyRecords = INITIAL_FACULTY_RECORDS.map(f => EvaluatorEngine.computeFacultyComposite(f));
+        this.initializeDefaultRecords();
       }
     } else {
-      this.facultyRecords = INITIAL_FACULTY_RECORDS.map(f => EvaluatorEngine.computeFacultyComposite(f));
-      this.saveState();
+      this.initializeDefaultRecords();
     }
 
-    const csFaculty = this.facultyRecords.filter(f => f.department === this.selectedDepartment);
-    if (csFaculty.length > 0) {
-      this.selectedFacultyId = csFaculty[0].id;
+    const savedLog = localStorage.getItem("ped_submissions_log_v3");
+    if (savedLog) {
+      try {
+        this.submissionsLog = JSON.parse(savedLog);
+      } catch (e) {
+        this.submissionsLog = [];
+      }
+    }
+
+    // Default initial selection
+    const deptFaculty = this.facultyRecords.filter(f => f.department === this.selectedDepartment);
+    if (deptFaculty.length > 0) {
+      this.selectedFacultyId = deptFaculty[0].id;
     } else if (this.facultyRecords.length > 0) {
       this.selectedFacultyId = this.facultyRecords[0].id;
       this.selectedDepartment = this.facultyRecords[0].department;
     }
   }
 
-  saveState() {
-    localStorage.setItem("ped_college_faculty", JSON.stringify(this.facultyRecords));
+  initializeDefaultRecords() {
+    this.facultyRecords = INITIAL_FACULTY_RECORDS.map(f => {
+      const copy = { ...f, isDemoData: true };
+      if (copy.annexure9b) {
+        copy.annexure9b = EvaluatorEngine.evaluateAnnexure9b({
+          ...copy.annexure9b,
+          facultyName: copy.facultyName,
+          department: copy.department,
+          courseTitle: copy.courseTitle,
+          courseCode: copy.courseCode,
+          isDemoData: true
+        });
+      }
+      if (copy.annexure9c) {
+        copy.annexure9c = EvaluatorEngine.evaluateAnnexure9c({
+          ...copy.annexure9c,
+          facultyName: copy.facultyName,
+          department: copy.department,
+          courseTitle: copy.courseTitle,
+          courseCode: copy.courseCode,
+          isDemoData: true
+        });
+      }
+      return EvaluatorEngine.computeFacultyComposite(copy);
+    });
+
+    this.submissionsLog = [];
+    this.facultyRecords.forEach(f => {
+      if (f.annexure9b) {
+        this.submissionsLog.push({
+          id: `SUB-9B-${f.id}`,
+          date: f.annexure9b.submissionDate || "2026-09-18",
+          fileName: f.annexure9b.fileName || "Annexure_9b.docx",
+          facultyName: f.facultyName,
+          facultyId: f.id,
+          department: f.department,
+          annexure: "Annexure 9(b)",
+          course: `${f.courseCode || ''} ${f.courseTitle || ''}`.trim(),
+          completeness: f.annexure9b.submissionCompleteness,
+          evidenceStatus: f.annexure9b.evidenceStatus,
+          qualityScore: f.annexure9b.qualityScore,
+          evaluationStatus: f.annexure9b.evaluationStatus,
+          evaluationData: f.annexure9b
+        });
+      }
+      if (f.annexure9c) {
+        this.submissionsLog.push({
+          id: `SUB-9C-${f.id}`,
+          date: f.annexure9c.submissionDate || "2026-09-25",
+          fileName: f.annexure9c.fileName || "Annexure_9c.docx",
+          facultyName: f.facultyName,
+          facultyId: f.id,
+          department: f.department,
+          annexure: "Annexure 9(c)",
+          course: `${f.courseCode || ''} ${f.courseTitle || ''}`.trim(),
+          completeness: f.annexure9c.submissionCompleteness,
+          evidenceStatus: f.annexure9c.evidenceStatus,
+          qualityScore: f.annexure9c.qualityScore,
+          evaluationStatus: f.annexure9c.evaluationStatus,
+          evaluationData: f.annexure9c
+        });
+      }
+    });
+
+    this.saveState();
   }
 
-  populateDepartmentDropdowns() {
-    const mainDeptSelect = document.getElementById("dept-select-main");
-    const formDeptSelect = document.getElementById("input-department");
-
-    const deptOptionsHtml = this.departments.map(d => `
-      <option value="${d.name}" ${d.name === this.selectedDepartment ? 'selected' : ''}>
-        ${d.name} (${d.code})
-      </option>
-    `).join("");
-
-    if (mainDeptSelect) mainDeptSelect.innerHTML = deptOptionsHtml;
-    if (formDeptSelect) formDeptSelect.innerHTML = deptOptionsHtml;
+  saveState() {
+    localStorage.setItem("ped_college_faculty_v3", JSON.stringify(this.facultyRecords));
+    localStorage.setItem("ped_submissions_log_v3", JSON.stringify(this.submissionsLog));
   }
 
   setupEventListeners() {
-    // Navigation Tabs
+    // 4 Primary Navigation Tabs
     const tabs = document.querySelectorAll(".nav-tab");
     tabs.forEach(tab => {
       tab.addEventListener("click", () => {
@@ -84,45 +177,71 @@ class PedApp {
         const activePane = document.getElementById(targetPane);
         if (activePane) activePane.classList.add("active");
 
-        if (targetPane === 'portfolios-tab') {
+        if (targetPane === 'faculty-reports-tab') {
           this.renderFacultyDossier();
-        } else if (targetPane === 'iqac-tab') {
-          this.renderIqacSummary();
+        } else if (targetPane === 'iqac-analytics-tab') {
+          this.renderIqacAnalytics();
+        } else if (targetPane === 'submissions-tab') {
+          this.renderSubmissionsRegistryTable();
         }
       });
     });
 
-    // Main Department Dropdown Selection
+    // Bulk File Selection Handlers
+    this.setupBulkFileSelection();
+
+    // Department & Faculty Selectors on Faculty Reports Tab
     document.getElementById("dept-select-main")?.addEventListener("change", (e) => {
       this.selectedDepartment = e.target.value;
       this.populateFacultyDropdown();
       this.renderFacultyDossier();
-      this.updateMetricRibbon();
     });
 
-    // Faculty Member Selector
     document.getElementById("faculty-select")?.addEventListener("change", (e) => {
       this.selectedFacultyId = e.target.value;
       this.renderFacultyDossier();
     });
 
-    // Dropzone & File Input Handling
-    this.setupFileSelection();
-
-    // Submission Confirmation Form
-    document.getElementById("submission-confirm-form")?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      this.handleFormSubmit();
-    });
-
-    // Load Sample Test Document
+    // Sample Batch Test Button
     document.getElementById("load-test-sample-btn")?.addEventListener("click", async () => {
-      await this.loadSampleWordDoc();
+      await this.runSampleBatchTest();
     });
 
-    // Print Modal Handlers
+    // Reset to Calibration Baseline
+    document.getElementById("clear-custom-submissions-btn")?.addEventListener("click", () => {
+      if (confirm("Reset portal to baseline calibration data? All uploaded batch records will be cleared.")) {
+        localStorage.removeItem("ped_college_faculty_v3");
+        localStorage.removeItem("ped_submissions_log_v3");
+        this.initializeDefaultRecords();
+        this.renderAll();
+        document.getElementById("batch-progress-card")?.classList.add("hidden");
+        document.getElementById("upload-evaluation-result")?.classList.add("hidden");
+        this.showToast("Portal reset to baseline calibration data.", "info");
+      }
+    });
+
+    // Submissions Registry Table Filters & Search
+    document.getElementById("search-submissions-input")?.addEventListener("input", (e) => {
+      this.submissionSearchQuery = e.target.value.toLowerCase().trim();
+      this.renderSubmissionsRegistryTable();
+    });
+
+    document.getElementById("filter-submissions-status")?.addEventListener("change", (e) => {
+      this.submissionStatusFilter = e.target.value;
+      this.renderSubmissionsRegistryTable();
+    });
+
+    document.getElementById("filter-submissions-dept")?.addEventListener("change", (e) => {
+      this.submissionDeptFilter = e.target.value;
+      this.renderSubmissionsRegistryTable();
+    });
+
+    // Print & PDF Export Handlers
     document.getElementById("print-dossier-btn")?.addEventListener("click", () => {
-      this.openPrintModal();
+      this.openPrintModal("faculty");
+    });
+    document.getElementById("print-institutional-btn")?.addEventListener("click", () => {
+      this.openPrintModal("institutional");
     });
     document.getElementById("modal-print-btn")?.addEventListener("click", () => {
       window.print();
@@ -134,19 +253,56 @@ class PedApp {
       document.getElementById("dossier-modal").classList.add("hidden");
     });
 
-    // Export CSV Buttons
-    document.getElementById("export-csv-btn")?.addEventListener("click", () => {
-      this.exportAllToCsv();
+    // Export Excel / CSV Buttons
+    document.getElementById("export-excel-btn")?.addEventListener("click", () => {
+      this.exportInstitutionalExcelWorkbook();
+    });
+    document.getElementById("download-submissions-csv-btn")?.addEventListener("click", () => {
+      this.exportSubmissionsCsv();
+    });
+    document.getElementById("export-faculty-csv-btn")?.addEventListener("click", () => {
+      this.exportSelectedFacultyCsv();
     });
     document.getElementById("export-summary-table-btn")?.addEventListener("click", () => {
       this.exportDepartmentSummaryCsv();
     });
+
+    // Analytics Filters
+    ["analytics-filter-ay", "analytics-filter-sem", "analytics-filter-dept", "analytics-filter-prog", "analytics-filter-annexure"].forEach(id => {
+      document.getElementById(id)?.addEventListener("change", () => {
+        this.updateAnalyticsFilters();
+      });
+    });
   }
 
-  setupFileSelection() {
+  /**
+   * Sets up drag-and-drop and multiple file/folder buttons
+   */
+  setupBulkFileSelection() {
     const dropzone = document.getElementById("file-dropzone");
-    const fileInput = document.getElementById("file-input");
-    if (!dropzone || !fileInput) return;
+    const fileInputMultiple = document.getElementById("file-input-multiple");
+    const folderInput = document.getElementById("folder-input");
+    const btnFiles = document.getElementById("btn-browse-files");
+    const btnFolder = document.getElementById("btn-browse-folder");
+
+    if (!dropzone) return;
+
+    btnFiles?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fileInputMultiple?.click();
+    });
+
+    btnFolder?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      folderInput?.click();
+    });
+
+    dropzone.addEventListener("click", (e) => {
+      // Don't trigger if clicked a child button
+      if (e.target.tagName !== "BUTTON" && !e.target.closest("button")) {
+        fileInputMultiple?.click();
+      }
+    });
 
     ['dragenter', 'dragover'].forEach(name => {
       dropzone.addEventListener(name, (e) => {
@@ -163,123 +319,170 @@ class PedApp {
     });
 
     dropzone.addEventListener('drop', (e) => {
-      const files = e.dataTransfer.files;
-      if (files.length > 0) this.processSelectedFile(files[0]);
+      const files = Array.from(e.dataTransfer.files || []);
+      if (files.length > 0) {
+        this.processFilesBatch(files);
+      }
     });
 
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) this.processSelectedFile(e.target.files[0]);
+    fileInputMultiple?.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        this.processFilesBatch(files);
+      }
+    });
+
+    folderInput?.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        this.processFilesBatch(files);
+      }
     });
   }
 
   /**
-   * Reads selected file, extracts details, and pre-fills the form inputs on-screen!
+   * Asynchronous, non-blocking batch processing pipeline for 600+ documents.
+   * Reads documents in the background, extracts content, evaluates against rubrics,
+   * and updates all portal data automatically.
    */
-  async processSelectedFile(file) {
-    // Show chosen file pill
-    const pill = document.getElementById("file-chosen-pill");
-    const pillName = document.getElementById("file-chosen-name");
-    if (pill && pillName) {
-      pill.style.display = "inline-flex";
-      pillName.textContent = file.name;
-    }
-
-    try {
-      const parsed = await DocumentParser.parseFile(file);
-      this.activeParsedDocument = parsed;
-
-      // Pre-fill form inputs with extracted values so the user sees their name right away!
-      const nameInput = document.getElementById("input-faculty-name");
-      const deptSelect = document.getElementById("input-department");
-      const courseInput = document.getElementById("input-course-title");
-      const typeSelect = document.getElementById("input-annexure-type");
-      const methodInput = document.getElementById("input-method");
-      const reflectInput = document.getElementById("input-reflection");
-
-      if (nameInput && parsed.facultyName) {
-        nameInput.value = parsed.facultyName;
-      }
-      if (deptSelect && parsed.department) {
-        // Find matching option
-        for (let i = 0; i < deptSelect.options.length; i++) {
-          if (deptSelect.options[i].value.toLowerCase().includes(parsed.department.toLowerCase())) {
-            deptSelect.selectedIndex = i;
-            break;
-          }
-        }
-      }
-      if (courseInput) {
-        courseInput.value = `${parsed.courseCode || ''} ${parsed.courseTitle || ''}`.trim();
-      }
-      if (typeSelect) {
-        typeSelect.value = parsed.type === 'ANNEXURE_9C' ? '9C' : '9B';
-      }
-      if (methodInput) {
-        methodInput.value = parsed.teachingMethod || (parsed.type === 'ANNEXURE_9C' ? 'Continuous Assessment' : '');
-      }
-      if (reflectInput) {
-        reflectInput.value = parsed.planningPurpose || parsed.inClassDelivery || parsed.whatWorked || '';
-      }
-
-      this.showToast(`Document loaded: ${file.name}. Please confirm your name and details below.`, "success");
-    } catch (err) {
-      console.error(err);
-      this.showToast(`Could not read file: ${err.message}`, "error");
-    }
-  }
-
-  /**
-   * Load test Word doc for demonstration
-   */
-  async loadSampleWordDoc() {
-    try {
-      const response = await fetch('/templates/Annexure_9_b_Template_Pedagogy_Approach.docx');
-      const blob = await response.blob();
-      const file = new File([blob], 'Annexure_9_b_Sample_Submission.docx', {
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      });
-      await this.processSelectedFile(file);
-      
-      // If template was blank, prefill realistic sample
-      const nameInput = document.getElementById("input-faculty-name");
-      if (nameInput && !nameInput.value) {
-        nameInput.value = "Dr. M. Xavier";
-      }
-      const courseInput = document.getElementById("input-course-title");
-      if (courseInput && !courseInput.value) {
-        courseInput.value = "23PCS302 Distributed Computing";
-      }
-      const methodInput = document.getElementById("input-method");
-      if (methodInput && !methodInput.value) {
-        methodInput.value = "Flipped Classroom & Microservice Simulation Pods";
-      }
-      const reflectInput = document.getElementById("input-reflection");
-      if (reflectInput && !reflectInput.value) {
-        reflectInput.value = "Conducted hands-on container deployment challenge. Students engaged in active problem solving with high retention.";
-      }
-    } catch (e) {
-      console.error(e);
-      this.showToast("Could not load sample template.", "error");
-    }
-  }
-
-  /**
-   * Handles submission of the confirmed form
-   */
-  handleFormSubmit() {
-    const facultyName = document.getElementById("input-faculty-name").value.trim();
-    const department = document.getElementById("input-department").value;
-    const course = document.getElementById("input-course-title").value.trim();
-    const annexureType = document.getElementById("input-annexure-type").value;
-    const method = document.getElementById("input-method").value.trim();
-    const reflection = document.getElementById("input-reflection").value.trim();
-
-    if (!facultyName) {
-      this.showToast("Please enter your Faculty Name.", "error");
+  async processFilesBatch(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    if (this.isProcessingBatch) {
+      this.showToast("Another batch is currently processing. Please wait...", "warning");
       return;
     }
 
-    // Find existing faculty by name in this department, or create new
+    this.isProcessingBatch = true;
+
+    // Filter for Word and PDF documents
+    const validFiles = fileList.filter(f => {
+      const n = f.name.toLowerCase();
+      return n.endsWith('.docx') || n.endsWith('.doc') || n.endsWith('.pdf');
+    });
+
+    if (validFiles.length === 0) {
+      this.showToast("No Word (.docx) or PDF (.pdf) documents found in selection.", "error");
+      this.isProcessingBatch = false;
+      return;
+    }
+
+    // Display Batch Progress Card
+    const progressCard = document.getElementById("batch-progress-card");
+    const progressFill = document.getElementById("batch-progress-fill");
+    const statusTitle = document.getElementById("batch-status-title");
+    const currentFileText = document.getElementById("batch-current-file-text");
+    const countDisplay = document.getElementById("batch-count-display");
+    const percentageDisplay = document.getElementById("batch-percentage-display");
+    const spinner = document.getElementById("batch-spinner");
+
+    const statVerified = document.getElementById("batch-stat-verified");
+    const statProvisional = document.getElementById("batch-stat-provisional");
+    const statIncomplete = document.getElementById("batch-stat-incomplete");
+    const statFailed = document.getElementById("batch-stat-failed");
+
+    if (progressCard) progressCard.classList.remove("hidden");
+    if (spinner) spinner.style.display = "inline-block";
+    if (statusTitle) statusTitle.textContent = `Batch Ingestion Active: Checking ${validFiles.length} Documents in Background...`;
+
+    let verifiedCount = 0;
+    let provisionalCount = 0;
+    let incompleteCount = 0;
+    let failedCount = 0;
+
+    const total = validFiles.length;
+    this.showToast(`Starting automated background check for ${total} documents...`, "info");
+
+    for (let i = 0; i < total; i++) {
+      const file = validFiles[i];
+
+      // Update Live UI Counters
+      const pct = Math.round(((i + 1) / total) * 100);
+      if (progressFill) progressFill.style.width = `${pct}%`;
+      if (countDisplay) countDisplay.textContent = `${i + 1} / ${total}`;
+      if (percentageDisplay) percentageDisplay.textContent = `${pct}% Completed`;
+      if (currentFileText) currentFileText.textContent = `Analyzing: ${file.name} (${(file.size / 1024).toFixed(1)} KB)...`;
+
+      // Non-blocking yield for browser paint loop
+      await new Promise(resolve => setTimeout(resolve, 5));
+
+      try {
+        const parsed = await DocumentParser.parseFile(file);
+        let evaluation;
+
+        if (parsed.extractionFailed || parsed.isCorrupted) {
+          failedCount++;
+          evaluation = EvaluatorEngine.generateExtractionFailureEvaluation(
+            parsed.type || "ANNEXURE_9B",
+            { fileName: file.name, facultyName: parsed.facultyName || "Unknown Faculty" },
+            RUBRIC_9B_CONFIG
+          );
+        } else if (parsed.type === "ANNEXURE_9C") {
+          evaluation = EvaluatorEngine.evaluateAnnexure9c({
+            ...parsed,
+            fileName: file.name,
+            isDemoData: false
+          });
+        } else {
+          evaluation = EvaluatorEngine.evaluateAnnexure9b({
+            ...parsed,
+            fileName: file.name,
+            isDemoData: false
+          });
+        }
+
+        // Tally outcome
+        if (evaluation.evaluationStatus === "Verified") verifiedCount++;
+        else if (evaluation.evaluationStatus === "Incomplete — Not Evaluable") incompleteCount++;
+        else if (evaluation.evaluationStatus.includes("Failed")) failedCount++;
+        else provisionalCount++;
+
+        // Update Counter DOM
+        if (statVerified) statVerified.textContent = verifiedCount;
+        if (statProvisional) statProvisional.textContent = provisionalCount;
+        if (statIncomplete) statIncomplete.textContent = incompleteCount;
+        if (statFailed) statFailed.textContent = failedCount;
+
+        // Register in Faculty Records & Submissions
+        this.registerEvaluatedSubmission(evaluation, file.name);
+
+      } catch (err) {
+        console.error("Batch processing error on file:", file.name, err);
+        failedCount++;
+        if (statFailed) statFailed.textContent = failedCount;
+      }
+
+      // Periodically update table every 10 files or on the last file
+      if ((i + 1) % 10 === 0 || i === total - 1) {
+        this.saveState();
+        this.updateMetricRibbon();
+        this.renderSubmissionsRegistryTable();
+      }
+    }
+
+    // Batch Complete
+    if (spinner) spinner.style.display = "none";
+    if (statusTitle) statusTitle.textContent = `Batch Processing Complete: ${total} Documents Analyzed & Recorded`;
+    if (currentFileText) currentFileText.textContent = `All records updated across Submissions, Faculty Reports, and IQAC Analytics.`;
+
+    this.isProcessingBatch = false;
+    this.saveState();
+    this.renderAll();
+
+    this.showToast(
+      `Batch of ${total} documents verified: ${verifiedCount} Verified, ${provisionalCount} Provisional, ${incompleteCount} Incomplete (0 Score).`,
+      "success"
+    );
+  }
+
+  /**
+   * Registers a single evaluated document into faculty portfolios and submissions log
+   */
+  registerEvaluatedSubmission(evaluation, fileName) {
+    const facultyName = evaluation.facultyName || "Unidentified Faculty";
+    const department = evaluation.department || "General";
+    const is9c = evaluation.type === "ANNEXURE_9C";
+
+    // Find existing faculty by name & department, or create new
     let faculty = this.facultyRecords.find(f => 
       f.facultyName.toLowerCase() === facultyName.toLowerCase() &&
       f.department.toLowerCase() === department.toLowerCase()
@@ -287,569 +490,1310 @@ class PedApp {
 
     if (!faculty) {
       faculty = {
-        id: `FAC-${Date.now().toString().slice(-4)}`,
+        id: `FAC-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 900 + 100)}`,
         facultyName: facultyName,
         designation: "Assistant Professor",
         department: department,
-        programme: "Undergraduate / Postgraduate",
-        courseCode: course.split(' ')[0] || "CRS",
-        courseTitle: course,
-        academicYear: "2025-26",
+        programme: evaluation.programme || "Undergraduate / Postgraduate",
+        courseCode: evaluation.courseCode || "CRS",
+        courseTitle: evaluation.courseTitle || "Course Offering",
+        academicYear: evaluation.academicYear || "2025-26",
         email: `${facultyName.toLowerCase().replace(/[^a-z]/g, '')}@sjctni.edu`,
         annexure9b: null,
         annexure9c: null,
         compositeScore: 0,
-        statusBand: "Pending"
+        statusBand: "Needs Improvement",
+        isDemoData: false
       };
       this.facultyRecords.unshift(faculty);
     } else {
-      faculty.courseTitle = course;
+      if (evaluation.courseTitle) faculty.courseTitle = evaluation.courseTitle;
+      faculty.isDemoData = false;
     }
 
-    // Evaluate the submission
-    if (annexureType === '9C') {
-      faculty.annexure9c = EvaluatorEngine.evaluateAnnexure9c({
-        fileName: this.activeParsedDocument?.fileName || "Annexure_9_c_Submission.docx",
-        whatWorked: reflection || "Continuous assessment components conducted per approved syllabus.",
-        whatCouldImprove: "Continue refining question rubrics.",
-        courseOutcomes: this.activeParsedDocument?.courseOutcomes || [
-          "CO1: Formulate domain problems.",
-          "CO2: Apply critical evaluation methods.",
-          "CO3: Synthesize system architectures."
-        ],
-        components: [
-          { name: "Continuous Internal Assessment (CIA 1)", type: "Summative", co: "CO1, CO2", scored: true, marks: 25 },
-          { name: method || "Alternative Practical Assessment", type: "Alternative", co: "CO2, CO3", scored: true, marks: 20 },
-          { name: "In-Class Formative Check", type: "Formative", co: "CO1", scored: false, marks: 10 }
-        ]
-      });
+    if (is9c) {
+      faculty.annexure9c = evaluation;
     } else {
-      faculty.annexure9b = EvaluatorEngine.evaluateAnnexure9b({
-        fileName: this.activeParsedDocument?.fileName || "Annexure_9_b_Submission.docx",
-        teachingMethod: method || "Active & Collaborative Learning",
-        pedagogicalApproach: "Experiential Learning",
-        tools: "College LMS & Digital Worksheets",
-        planningPurpose: reflection || "To encourage active learning and higher-order critical thinking.",
-        inClassDelivery: reflection || "Conducted structured student-centric activities with peer interaction.",
-        impact: "Observed high student engagement and successful attainment of session outcomes.",
-        lookingAhead: "Will provide additional practice scaffolding in future offerings."
-      });
+      faculty.annexure9b = evaluation;
     }
 
-    // Recompute composite
+    // Recompute faculty composite score
     const updated = EvaluatorEngine.computeFacultyComposite(faculty);
     Object.assign(faculty, updated);
 
-    // Update active department and active faculty
+    // Append to Submissions Log (avoid duplicate IDs)
+    const subId = `SUB-${is9c ? '9C' : '9B'}-${faculty.id}-${Date.now().toString().slice(-4)}`;
+    this.submissionsLog.unshift({
+      id: subId,
+      date: evaluation.submissionDate || new Date().toISOString().split('T')[0],
+      fileName: fileName,
+      facultyName: facultyName,
+      facultyId: faculty.id,
+      department: department,
+      annexure: is9c ? "Annexure 9(c)" : "Annexure 9(b)",
+      course: `${evaluation.courseCode || ''} ${evaluation.courseTitle || ''}`.trim() || faculty.courseTitle,
+      completeness: evaluation.submissionCompleteness,
+      evidenceStatus: evaluation.evidenceStatus,
+      qualityScore: evaluation.qualityScore,
+      evaluationStatus: evaluation.evaluationStatus,
+      evaluationData: evaluation
+    });
+
     this.selectedDepartment = department;
     this.selectedFacultyId = faculty.id;
-
-    const mainDeptSelect = document.getElementById("dept-select-main");
-    if (mainDeptSelect) mainDeptSelect.value = department;
-
-    this.saveState();
-    this.renderAll();
-
-    // Show result banner
-    this.showEvaluationResultBanner(faculty, annexureType);
-    this.showToast(`Report evaluated successfully for ${faculty.facultyName}!`, "success");
   }
 
-  showEvaluationResultBanner(faculty, type) {
-    const banner = document.getElementById("upload-evaluation-result");
-    if (!banner) return;
+  /**
+   * Demonstrates bulk testing with 5 diverse sample cases:
+   * 1. Empty/Name-only doc (strictly 0 points)
+   * 2. Corrupted file (Extraction failure)
+   * 3. Generic boilerplate submission (Low score < 45)
+   * 4. High quality with missing evidence (Provisional, evidence 0%)
+   * 5. Exemplary complete submission (Verified, 94 pts)
+   */
+  async runSampleBatchTest() {
+    this.showToast("Generating 5 diverse test documents to simulate bulk verification...", "info");
 
-    banner.classList.remove("hidden");
-    const is9b = type === '9B';
-    const score = is9b ? faculty.annexure9b?.score : faculty.annexure9c?.score;
-    const band = is9b ? faculty.annexure9b?.band : faculty.annexure9c?.band;
+    const sampleSubmissions = [
+      {
+        fileName: "Sample_01_Name_Only_Submission.docx",
+        type: "ANNEXURE_9B",
+        facultyName: "Dr. Name Only Candidate",
+        department: "Computer Science",
+        courseTitle: "Distributed Systems",
+        teachingMethod: "",
+        planningPurpose: "",
+        inClassDelivery: "",
+        impact: "",
+        lookingAhead: "",
+        evidenceAttached: ""
+      },
+      {
+        fileName: "Sample_02_Corrupted_Upload.docx",
+        type: "ANNEXURE_9B",
+        facultyName: "Dr. Archive Corrupted",
+        department: "Mathematics",
+        extractionFailed: true,
+        isCorrupted: true
+      },
+      {
+        fileName: "Sample_03_Generic_Boilerplate.docx",
+        type: "ANNEXURE_9B",
+        facultyName: "Dr. Standard Lecturer",
+        department: "Commerce",
+        courseTitle: "Corporate Accounting",
+        teachingMethod: "Conducted standard lecture and usual chalk and talk",
+        planningPurpose: "Regular class conducted as per syllabus schedule",
+        inClassDelivery: "Standard lecture delivered, read from textbook",
+        coAlignment: "General topic covered in regular session",
+        impact: "Students understood the topics well and all went well",
+        lookingAhead: "Normal lecture planned for future classes",
+        evidenceAttached: "None"
+      },
+      {
+        fileName: "Sample_04_Detailed_No_Evidence.docx",
+        type: "ANNEXURE_9B",
+        facultyName: "Dr. S. Maria (Rich Reflection)",
+        department: "Physics",
+        courseTitle: "Quantum Mechanics",
+        teachingMethod: "Flipped Classroom with peer code sprint",
+        pedagogicalApproach: "Collaborative learning and inquiry-based problem solving",
+        planningPurpose: "To enable students to actively debate wave functions and achieve higher-order cognitive mastery",
+        inClassDelivery: "Students worked in pairs for 45 minutes calculating probability densities while instructor facilitated",
+        coAlignment: "CO2, CO3: Apply boundary conditions to wave equations",
+        impact: "Pre-quiz 42% accuracy, post-sprint lab tasks achieved 88% first-pass pass rate",
+        lookingAhead: "Strong engagement in peer debates. Next offering will include matrix tutorials",
+        evidenceAttached: "None"
+      },
+      {
+        fileName: "Sample_05_Exemplar_Assessment.docx",
+        type: "ANNEXURE_9C",
+        facultyName: "Dr. A. Francis (Exemplar CIE)",
+        department: "Computer Science",
+        courseTitle: "Cloud Architecture",
+        courseOutcomes: [
+          { code: "CO1", text: "Design distributed microservices" },
+          { code: "CO2", text: "Evaluate container orchestration security" },
+          { code: "CO3", text: "Deploy Kubernetes clusters on AWS" }
+        ],
+        components: [
+          { name: "CIA 1 Written Exam", type: "Summative", co: "CO1, CO2", announcedDate: "2026-08-15", preMaterials: "Blueprint & question bank", completionDate: "2026-08-28", postMaterials: "Model answers", scored: true, maxMarks: 50 },
+          { name: "Kubernetes Cloud Sprint", type: "Alternative", co: "CO2, CO3", announcedDate: "2026-09-05", preMaterials: "Docker rubric & repos", completionDate: "2026-09-20", postMaterials: "Automated PR comments", scored: true, maxMarks: 30 }
+        ],
+        whatWorked: "Hands-on containerization sprint drove 95% pass rate on live test cases.",
+        whatCouldImprove: "Stagger initial setup milestones for beginners.",
+        evidenceAttached: "https://lms.sjctni.edu/cs/cloud_sprint_dossier.pdf"
+      }
+    ];
 
-    banner.innerHTML = `
-      <div class="flex-between flex-wrap gap-2">
-        <div>
-          <span class="status-badge ${band === 'Exemplary' ? 'badge-success' : 'badge-indigo'}">${band}</span>
-          <h3 class="card-title mt-2">Evaluation Completed: ${faculty.facultyName}</h3>
-          <p class="card-subtitle">
-            ${is9b ? 'Annexure 9(b) Pedagogy Score' : 'Annexure 9(c) Assessment Score'}: 
-            <strong>${score}/100</strong> • Department: <strong>${faculty.department}</strong> (${faculty.courseTitle})
-          </p>
-        </div>
-        <button id="view-evaluated-dossier-btn" class="btn btn-primary btn-sm">
-          View Faculty Portfolio →
-        </button>
-      </div>
-    `;
+    // Process through the batch pipeline
+    const progressCard = document.getElementById("batch-progress-card");
+    const progressFill = document.getElementById("batch-progress-fill");
+    const statusTitle = document.getElementById("batch-status-title");
+    const countDisplay = document.getElementById("batch-count-display");
+    const currentFileText = document.getElementById("batch-current-file-text");
 
-    document.getElementById("view-evaluated-dossier-btn")?.addEventListener("click", () => {
-      document.getElementById("tab-portfolios")?.click();
+    if (progressCard) progressCard.classList.remove("hidden");
+    if (statusTitle) statusTitle.textContent = "Processing Sample Batch (5 Documents)...";
+
+    for (let i = 0; i < sampleSubmissions.length; i++) {
+      const item = sampleSubmissions[i];
+      if (progressFill) progressFill.style.width = `${((i + 1) / 5) * 100}%`;
+      if (countDisplay) countDisplay.textContent = `${i + 1} / 5`;
+      if (currentFileText) currentFileText.textContent = `Analyzing: ${item.fileName}...`;
+
+      await new Promise(resolve => setTimeout(resolve, 250));
+
+      let evaluation;
+      if (item.extractionFailed) {
+        evaluation = EvaluatorEngine.generateExtractionFailureEvaluation(
+          item.type, { fileName: item.fileName, facultyName: item.facultyName }, RUBRIC_9B_CONFIG
+        );
+      } else if (item.type === "ANNEXURE_9C") {
+        evaluation = EvaluatorEngine.evaluateAnnexure9c({ ...item, isDemoData: false });
+      } else {
+        evaluation = EvaluatorEngine.evaluateAnnexure9b({ ...item, isDemoData: false });
+      }
+
+      this.registerEvaluatedSubmission(evaluation, item.fileName);
+    }
+
+    if (statusTitle) statusTitle.textContent = "Sample Batch Verification Complete (5 Documents Analyzed)";
+    this.saveState();
+    this.renderAll();
+    this.renderEvaluationResultBanner(this.submissionsLog[0].evaluationData);
+
+    this.showToast("Batch test complete! Check results table below.", "success");
+  }
+
+  /**
+   * Renders the Submissions Registry Table with instant search and multi-criteria filters
+   */
+  renderSubmissionsRegistryTable() {
+    const tbody = document.getElementById("submissions-registry-tbody");
+    if (!tbody) return;
+
+    let filtered = this.submissionsLog;
+
+    // Apply Search Query
+    if (this.submissionSearchQuery) {
+      filtered = filtered.filter(s => 
+        (s.facultyName || "").toLowerCase().includes(this.submissionSearchQuery) ||
+        (s.course || "").toLowerCase().includes(this.submissionSearchQuery) ||
+        (s.fileName || "").toLowerCase().includes(this.submissionSearchQuery) ||
+        (s.department || "").toLowerCase().includes(this.submissionSearchQuery)
+      );
+    }
+
+    // Apply Status Filter
+    if (this.submissionStatusFilter !== "ALL") {
+      filtered = filtered.filter(s => s.evaluationStatus === this.submissionStatusFilter);
+    }
+
+    // Apply Department Filter
+    if (this.submissionDeptFilter !== "ALL") {
+      filtered = filtered.filter(s => s.department === this.submissionDeptFilter);
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+            No submissions matched your filter criteria (${this.submissionsLog.length} total on record).
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(sub => {
+      const statusBadge = sub.evaluationStatus === "Verified" 
+        ? "badge-success" 
+        : (sub.evaluationStatus === "Incomplete — Not Evaluable" ? "badge-danger" : "badge-warning");
+
+      const evidenceBadge = sub.evidenceStatus === "Verified" 
+        ? "badge-success" 
+        : (sub.evidenceStatus === "Missing" ? "badge-danger" : "badge-warning");
+
+      return `
+        <tr>
+          <td><span style="font-family: monospace; font-size: 0.775rem;">${sub.date}</span></td>
+          <td>
+            <strong>${sub.facultyName}</strong>
+            <div style="font-size: 0.725rem; color: var(--text-muted);">${sub.fileName || 'document.docx'}</div>
+          </td>
+          <td>${sub.department}</td>
+          <td><span class="badge ${sub.annexure.includes('9(b)') ? 'badge-indigo' : 'badge-success'}">${sub.annexure}</span></td>
+          <td>${sub.completeness}%</td>
+          <td><span class="status-badge ${evidenceBadge}">${sub.evidenceStatus}</span></td>
+          <td>
+            <strong style="color: ${sub.qualityScore === 0 ? '#e11d48' : '#4338ca'}; font-size: 0.95rem;">
+              ${sub.qualityScore}
+            </strong>/100
+          </td>
+          <td><span class="status-badge ${statusBadge}">${sub.evaluationStatus}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <button class="btn btn-outline btn-sm view-sub-btn" data-facid="${sub.facultyId}" title="View Individual Faculty Report">
+                View Report →
+              </button>
+              <button class="btn btn-outline btn-sm inspect-sub-btn" data-subid="${sub.id}" title="Inspect Rubric Evaluation">
+                Inspect
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    tbody.querySelectorAll(".view-sub-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const facId = btn.getAttribute("data-facid");
+        this.selectedFacultyId = facId;
+        const fac = this.facultyRecords.find(f => f.id === facId);
+        if (fac) {
+          this.selectedDepartment = fac.department;
+          const mainDeptSelect = document.getElementById("dept-select-main");
+          if (mainDeptSelect) mainDeptSelect.value = fac.department;
+        }
+        this.populateFacultyDropdown();
+        this.renderFacultyDossier();
+        document.getElementById("tab-faculty-reports")?.click();
+      });
+    });
+
+    tbody.querySelectorAll(".inspect-sub-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const subId = btn.getAttribute("data-subid");
+        const sub = this.submissionsLog.find(s => s.id === subId);
+        if (sub && sub.evaluationData) {
+          this.renderEvaluationResultBanner(sub.evaluationData);
+        }
+      });
     });
   }
 
   /**
-   * Render All Views
+   * Renders the evaluation banner when inspecting a submission
    */
-  renderAll() {
-    this.updateMetricRibbon();
-    this.populateFacultyDropdown();
-    this.renderFacultyDossier();
-    this.renderIqacSummary();
+  renderEvaluationResultBanner(ev) {
+    const box = document.getElementById("upload-evaluation-result");
+    if (!box || !ev) return;
+
+    box.classList.remove("hidden");
+
+    const statusBadgeClass = ev.evaluationStatus === "Verified" 
+      ? "badge-success" 
+      : (ev.evaluationStatus === "Incomplete — Not Evaluable" ? "badge-danger" : "badge-warning");
+
+    const evidenceBadgeClass = ev.evidenceStatus === "Verified"
+      ? "badge-success"
+      : (ev.evidenceStatus === "Missing" ? "badge-danger" : "badge-warning");
+
+    box.innerHTML = `
+      <div class="card p-4" style="border: 2px solid var(--pastel-lavender-border); background: white;">
+        <div class="flex-between flex-wrap gap-2 mb-3 pb-2" style="border-bottom: 1px solid var(--border-card);">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h2 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin: 0;">
+                Audited Document: ${ev.facultyName}
+              </h2>
+              <span class="status-badge ${statusBadgeClass}">${ev.evaluationStatus}</span>
+            </div>
+            <p style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem;">
+              ${ev.type === 'ANNEXURE_9C' ? 'Annexure 9(c): Assessment Components' : 'Annexure 9(b): Pedagogical Practices'} • Rubric Version: ${ev.rubricVersion} • File: ${ev.fileName || 'document.docx'}
+            </p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm" id="btn-goto-faculty-report">
+              View Complete Faculty Report →
+            </button>
+            <button class="btn btn-outline btn-sm" id="btn-close-eval-banner">✕ Close</button>
+          </div>
+        </div>
+
+        <!-- 4 Distinct Measures (User Specification 1) -->
+        <div class="grid grid-4 mb-4">
+          <div class="metric-card p-3" style="background: var(--pastel-sky); border-color: var(--pastel-sky-border);">
+            <div class="metric-label" style="font-size: 0.75rem;">1. Submission Completeness</div>
+            <div class="metric-value-row">
+              <span class="metric-value" style="font-size: 1.6rem;">${ev.submissionCompleteness}%</span>
+            </div>
+            <div class="metric-subtext">Required rubric sections filled</div>
+          </div>
+
+          <div class="metric-card p-3" style="background: var(--pastel-mint); border-color: var(--pastel-mint-border);">
+            <div class="metric-label" style="font-size: 0.75rem;">2. Evidence Compliance</div>
+            <div class="metric-value-row">
+              <span class="metric-value" style="font-size: 1.6rem;">${ev.evidenceCompliance}%</span>
+              <span class="status-badge ${evidenceBadgeClass}" style="font-size: 0.7rem;">${ev.evidenceStatus}</span>
+            </div>
+            <div class="metric-subtext">Verifiable attached evidence</div>
+          </div>
+
+          <div class="metric-card p-3" style="background: var(--pastel-lavender); border-color: var(--pastel-lavender-border);">
+            <div class="metric-label" style="font-size: 0.75rem;">3. Quality Score</div>
+            <div class="metric-value-row">
+              <span class="metric-value text-indigo" style="font-size: 1.6rem;">${ev.qualityScore}/100</span>
+              <span class="status-badge badge-indigo" style="font-size: 0.7rem;">${ev.statusBand}</span>
+            </div>
+            <div class="metric-subtext">Derived from assessable criteria</div>
+          </div>
+
+          <div class="metric-card p-3" style="background: var(--pastel-peach); border-color: var(--pastel-peach-border);">
+            <div class="metric-label" style="font-size: 0.75rem;">4. Documentation Quality</div>
+            <div class="metric-value-row">
+              <span class="metric-value" style="font-size: 1.6rem;">${ev.overallDocumentationQuality}/100</span>
+            </div>
+            <div class="metric-subtext">Composite documentation index</div>
+          </div>
+        </div>
+
+        <!-- Deficiencies & Required Corrections (User Specification 1 & 4) -->
+        ${ev.deficiencies && ev.deficiencies.length > 0 ? `
+          <div class="mb-3 p-3" style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: var(--radius-md);">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: #9f1239; margin-bottom: 0.35rem;">
+              ⚠️ Deficiencies Identified (Must be corrected before credit)
+            </h4>
+            <ul style="margin-left: 1.25rem; font-size: 0.825rem; color: #881337;">
+              ${ev.deficiencies.map(d => `<li>${d}</li>`).join("")}
+            </ul>
+          </div>
+        ` : ''}
+
+        <!-- Criterion-Wise Breakdown -->
+        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main);">
+          Criterion-Wise Rubric Evaluation
+        </h4>
+        <div class="table-responsive">
+          <table class="data-table" style="font-size: 0.8rem;">
+            <thead>
+              <tr>
+                <th>Criterion</th>
+                <th>Points</th>
+                <th>Supporting Document Text</th>
+                <th>Rationale</th>
+                <th>Review Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(ev.criteriaResults || []).map(c => `
+                <tr>
+                  <td><strong>${c.criterionName}</strong></td>
+                  <td><strong>${c.awardedPoints}</strong> / ${c.maxPoints}</td>
+                  <td style="max-width: 280px; word-break: break-word; color: ${c.awardedPoints === 0 ? '#e11d48' : '#334155'};">
+                    ${c.supportingText || '[Missing from submission]'}
+                  </td>
+                  <td style="max-width: 260px;">${c.reason}</td>
+                  <td>
+                    <span class="status-badge ${c.reviewStatus === 'Verified' ? 'badge-success' : (c.reviewStatus === 'Missing' ? 'badge-danger' : 'badge-warning')}">
+                      ${c.reviewStatus}
+                    </span>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("btn-goto-faculty-report")?.addEventListener("click", () => {
+      document.getElementById("tab-faculty-reports")?.click();
+    });
+
+    document.getElementById("btn-close-eval-banner")?.addEventListener("click", () => {
+      box.classList.add("hidden");
+    });
+
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  updateMetricRibbon() {
-    const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
-
-    const avgElem = document.getElementById("stat-college-avg");
-    if (avgElem) avgElem.textContent = analytics.collegeComposite.toFixed(1);
-
-    const bandElem = document.getElementById("stat-quality-band");
-    if (bandElem) {
-      bandElem.textContent = analytics.collegeComposite >= 85 ? "Exemplary" : (analytics.collegeComposite >= 75 ? "Proficient" : "Developing");
-    }
-
-    const deptText = document.getElementById("stat-active-dept");
-    if (deptText) deptText.textContent = this.selectedDepartment;
-
-    const deptFacultyCount = this.facultyRecords.filter(f => f.department === this.selectedDepartment).length;
-    const deptCountElem = document.getElementById("stat-dept-count");
-    if (deptCountElem) deptCountElem.textContent = `${deptFacultyCount} Faculty`;
-
-    const count9bElem = document.getElementById("stat-count-9b");
-    if (count9bElem) count9bElem.textContent = analytics.submitted9bCount;
-
-    const avg9bElem = document.getElementById("stat-avg-9b");
-    if (avg9bElem) avg9bElem.textContent = `Avg: ${analytics.collegeAvg9b.toFixed(1)}`;
-
-    const count9cElem = document.getElementById("stat-count-9c");
-    if (count9cElem) count9cElem.textContent = analytics.submitted9cCount;
-
-    const avg9cElem = document.getElementById("stat-avg-9c");
-    if (avg9cElem) avg9cElem.textContent = `Avg: ${analytics.collegeAvg9c.toFixed(1)}`;
-  }
-
-  populateFacultyDropdown() {
-    const select = document.getElementById("faculty-select");
-    if (!select) return;
-
-    const deptFaculty = this.facultyRecords.filter(f => f.department === this.selectedDepartment);
-
-    if (deptFaculty.length === 0) {
-      select.innerHTML = `<option value="">No faculty submitted yet in ${this.selectedDepartment}</option>`;
-      this.selectedFacultyId = null;
-      return;
-    }
-
-    select.innerHTML = deptFaculty.map(f => `
-      <option value="${f.id}" ${f.id === this.selectedFacultyId ? 'selected' : ''}>
-        ${f.facultyName} (${f.courseCode || f.courseTitle}) - Score: ${f.compositeScore}/100
-      </option>
-    `).join("");
-
-    if (!deptFaculty.some(f => f.id === this.selectedFacultyId)) {
-      this.selectedFacultyId = deptFaculty[0].id;
-    }
-  }
-
+  /**
+   * Renders Individual Faculty Report with the 3 Mandatory Sections:
+   * 1. Deficiencies identified
+   * 2. Specific improvements required
+   * 3. Recommendations for the next academic cycle
+   */
   renderFacultyDossier() {
     const container = document.getElementById("faculty-detail-container");
     if (!container) return;
 
-    const deptFaculty = this.facultyRecords.filter(f => f.department === this.selectedDepartment);
-    const faculty = deptFaculty.find(f => f.id === this.selectedFacultyId) || deptFaculty[0];
-
+    const faculty = this.facultyRecords.find(f => f.id === this.selectedFacultyId) || this.facultyRecords[0];
     if (!faculty) {
-      container.innerHTML = `
-        <div class="card p-4 text-center">
-          <p style="color: var(--text-muted); margin-bottom: 1rem;">No reports submitted yet for the <strong>${this.selectedDepartment}</strong> department.</p>
-          <button id="switch-to-upload-btn" class="btn btn-primary btn-sm">
-            Upload Report for ${this.selectedDepartment}
-          </button>
-        </div>
-      `;
-      document.getElementById("switch-to-upload-btn")?.addEventListener("click", () => {
-        const deptInput = document.getElementById("input-department");
-        if (deptInput) deptInput.value = this.selectedDepartment;
-        document.getElementById("tab-upload")?.click();
-      });
+      container.innerHTML = `<div class="card p-4 text-center">No faculty member found for department ${this.selectedDepartment}.</div>`;
       return;
     }
 
-    const initials = faculty.facultyName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const b = faculty.annexure9b;
     const c = faculty.annexure9c;
 
+    const allDeficiencies = [...(b?.deficiencies || []), ...(c?.deficiencies || [])];
+    const allImprovements = [...(b?.improvements || []), ...(c?.improvements || [])];
+    const allRecommendations = [...(b?.recommendations || []), ...(c?.recommendations || [])];
+
     container.innerHTML = `
-      <div class="dossier-wrapper">
-        <!-- Header -->
-        <div class="dossier-header">
-          <div class="dossier-avatar-row">
-            <div class="faculty-avatar">${initials}</div>
-            <div>
-              <h2 class="faculty-meta-title">${faculty.facultyName}</h2>
-              <div class="faculty-meta-sub">
-                ${faculty.designation} • <strong>${faculty.department}</strong> • Faculty ID: ${faculty.id}
-              </div>
-              <div class="faculty-meta-sub mt-2">
-                <strong>Course:</strong> ${faculty.courseCode || ''} ${faculty.courseTitle}
-              </div>
-              <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.25rem;">
-                Email: ${faculty.email || 'faculty@sjctni.edu'} • Academic Year: ${faculty.academicYear}
-              </div>
+      <div class="card p-4">
+        <!-- Faculty Appraisal Header -->
+        <div class="dossier-header-grid">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin: 0;">
+                ${faculty.facultyName}
+              </h2>
+              <span class="status-badge ${faculty.evaluationStatus === 'Verified' ? 'badge-success' : 'badge-warning'}">
+                ${faculty.evaluationStatus || 'Provisional — Review Required'}
+              </span>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              ${faculty.designation} • Department of ${faculty.department} • St. Joseph's College (Autonomous)
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="info-pill">📚 ${faculty.courseCode || ''} ${faculty.courseTitle}</span>
+              <span class="info-pill">📅 Academic Year: ${faculty.academicYear || '2025-26'}</span>
+              <span class="info-pill">✉️ ${faculty.email}</span>
             </div>
           </div>
 
           <div class="dossier-score-gauge">
-            <div class="gauge-number ${faculty.compositeScore >= 85 ? 'text-emerald' : 'text-indigo'}">
-              ${faculty.compositeScore > 0 ? faculty.compositeScore : '--'}
+            <div class="gauge-number text-indigo">
+              ${faculty.compositeScore}
             </div>
-            <div class="gauge-label">Quality Score / 100</div>
+            <div class="gauge-label">Composite Quality Index / 100</div>
             <div class="mt-2">
-              <span class="status-badge ${faculty.statusBand === 'Exemplary' ? 'badge-success' : 'badge-indigo'}">
+              <span class="status-badge ${faculty.compositeScore >= 85 ? 'badge-success' : (faculty.compositeScore >= 70 ? 'badge-indigo' : 'badge-warning')}">
                 ${faculty.statusBand}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- Annexure 9(b) Section -->
-        <div class="annexure-box">
-          <div class="annexure-header-row">
-            <div>
-              <span class="annexure-tag tag-9b">Annexure 9(b)</span>
-              <h3 style="display: inline-block; font-size: 1.15rem; margin-left: 0.5rem;">
-                Faculty Reflection on Pedagogical Practices
-              </h3>
+        <!-- THE 3 MANDATORY FACULTY REPORT SECTIONS (User Specification 4) -->
+        <div class="mt-4">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem;">
+            Faculty Development & Corrective Action Summary
+          </h3>
+
+          <div class="grid grid-3 gap-3 mb-4">
+            <!-- 1. Deficiencies Identified -->
+            <div class="card p-3" style="background: #fff1f2; border-color: #fecdd3;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: #9f1239; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>⚠️</span> 1. Deficiencies Identified
+              </h4>
+              <p style="font-size: 0.75rem; color: #881337; margin-bottom: 0.5rem;">
+                Missing elements or unverified claims requiring correction:
+              </p>
+              ${allDeficiencies.length > 0 ? `
+                <ul style="font-size: 0.8rem; color: #881337; margin-left: 1.15rem; line-height: 1.45;">
+                  ${allDeficiencies.map(d => `<li>${d}</li>`).join("")}
+                </ul>
+              ` : `
+                <p style="font-size: 0.8rem; color: #166534; font-weight: 600;">No documentation deficiencies identified.</p>
+              `}
             </div>
-            ${b?.submitted ? `<span class="status-badge badge-indigo">Score: ${b.score}/100 (${b.band})</span>` : '<span class="status-badge badge-warning">Not Submitted</span>'}
+
+            <!-- 2. Specific Improvements Required -->
+            <div class="card p-3" style="background: #fffbeb; border-color: #fde68a;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: #92400e; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🎯</span> 2. Specific Improvements Required
+              </h4>
+              <p style="font-size: 0.75rem; color: #78350f; margin-bottom: 0.5rem;">
+                Pedagogical or assessment modifications needed:
+              </p>
+              ${allImprovements.length > 0 ? `
+                <ul style="font-size: 0.8rem; color: #78350f; margin-left: 1.15rem; line-height: 1.45;">
+                  ${allImprovements.map(imp => `<li>${imp}</li>`).join("")}
+                </ul>
+              ` : `
+                <p style="font-size: 0.8rem; color: #166534; font-weight: 600;">Teaching and assessment methods meet rubric benchmarks.</p>
+              `}
+            </div>
+
+            <!-- 3. Recommendations for Next Academic Cycle -->
+            <div class="card p-3" style="background: #f0fdf4; border-color: #bbf7d0;">
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: #166534; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🌱</span> 3. Recommendations for Next Cycle
+              </h4>
+              <p style="font-size: 0.75rem; color: #14532d; margin-bottom: 0.5rem;">
+                Strategic guidance for the upcoming course offering:
+              </p>
+              ${allRecommendations.length > 0 ? `
+                <ul style="font-size: 0.8rem; color: #14532d; margin-left: 1.15rem; line-height: 1.45;">
+                  ${allRecommendations.map(r => `<li>${r}</li>`).join("")}
+                </ul>
+              ` : `
+                <p style="font-size: 0.8rem; color: #14532d;">Disseminate this pedagogical practice across the department.</p>
+              `}
+            </div>
           </div>
-
-          ${b?.submitted ? `
-            <div class="mt-3">
-              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-                <div><strong>Teaching Method / Strategy:</strong> ${b.teachingMethod}</div>
-                <div><strong>Pedagogical Approach:</strong> ${b.pedagogicalApproach}</div>
-                <div><strong>Tools & Materials:</strong> ${b.tools}</div>
-              </div>
-
-              <div class="reflection-item">
-                <div class="reflection-label">Planning and Purpose</div>
-                <div class="reflection-text">${b.planningPurpose}</div>
-              </div>
-
-              <div class="reflection-item">
-                <div class="reflection-label">In-Class Delivery & Flow</div>
-                <div class="reflection-text">${b.inClassDelivery}</div>
-              </div>
-
-              <div class="reflection-item">
-                <div class="reflection-label">Impact & Evidence of Student Learning</div>
-                <div class="reflection-text">${b.impact}</div>
-              </div>
-
-              <div class="reflection-item">
-                <div class="reflection-label">Looking Ahead & Continuous Improvement</div>
-                <div class="reflection-text">${b.lookingAhead}</div>
-              </div>
-
-              <div class="grid grid-2 mt-3">
-                <div class="feedback-box">
-                  <div class="feedback-title">Commendations & Strengths</div>
-                  <ul class="feedback-list">
-                    ${(b.strengths || []).map(s => `<li class="feedback-item">${s}</li>`).join("")}
-                  </ul>
-                </div>
-
-                <div class="growth-box">
-                  <div class="growth-title">IQAC Recommendations for Improvement</div>
-                  <ul class="feedback-list">
-                    ${(b.recommendations || []).map(r => `<li class="growth-item">${r}</li>`).join("")}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          ` : `
-            <p style="color: var(--text-muted); padding: 1rem 0;">No Annexure 9(b) submitted for this faculty yet.</p>
-          `}
         </div>
 
-        <!-- Annexure 9(c) Section -->
+        <!-- ANNEXURE 9(b) REPORT SECTION -->
         <div class="annexure-box mt-4">
           <div class="annexure-header-row">
             <div>
-              <span class="annexure-tag tag-9c">Annexure 9(c)</span>
-              <h3 style="display: inline-block; font-size: 1.15rem; margin-left: 0.5rem;">
-                Faculty Reflection on Assessment Components
+              <span class="annexure-tag tag-9b">Annexure 9(b)</span>
+              <h3 style="display: inline-block; font-size: 1.15rem; margin-left: 0.5rem; color: var(--text-main);">
+                Reflection on Pedagogical Practices
               </h3>
             </div>
-            ${c?.submitted ? `<span class="status-badge badge-success">Score: ${c.score}/100 (${c.band})</span>` : '<span class="status-badge badge-warning">Not Submitted</span>'}
+            ${b ? `
+              <div class="d-flex align-items-center gap-2">
+                <span class="status-badge badge-indigo">Quality: ${b.qualityScore}/100</span>
+                <span class="status-badge ${b.evaluationStatus === 'Verified' ? 'badge-success' : 'badge-warning'}">${b.evaluationStatus}</span>
+              </div>
+            ` : '<span class="status-badge badge-neutral">Not Submitted</span>'}
           </div>
 
-          ${c?.submitted ? `
+          ${b ? `
             <div class="mt-3">
-              <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: #166534;">Assessment Components Conducted</h4>
-              <div class="table-responsive" style="margin-bottom: 1.25rem;">
-                <table class="data-table">
+              <div class="grid grid-3 gap-2 mb-3 p-3" style="background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 0.8rem;">
+                <div><strong>Completeness:</strong> ${b.submissionCompleteness}%</div>
+                <div><strong>Evidence Compliance:</strong> ${b.evidenceCompliance}% (${b.evidenceStatus})</div>
+                <div><strong>Pedagogies Mapped:</strong> ${(b.standardizedPedagogies || []).join(", ") || "Lecture"}</div>
+              </div>
+
+              <!-- Criterion Breakdown Table with Exact Supporting Text -->
+              <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem;">Criterion-by-Criterion Evaluation & Supporting Text</h4>
+              <div class="table-responsive">
+                <table class="data-table" style="font-size: 0.775rem;">
                   <thead>
                     <tr>
-                      <th>Component</th>
-                      <th>Type</th>
-                      <th>Aligned COs</th>
-                      <th>Scored / Practice</th>
-                      <th>Total Marks</th>
+                      <th style="width: 22%;">Rubric Criterion</th>
+                      <th style="width: 10%;">Score</th>
+                      <th style="width: 32%;">Supporting Document Text</th>
+                      <th style="width: 26%;">Evaluation Rationale</th>
+                      <th style="width: 10%;">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${(c.components || []).map(comp => `
+                    ${(b.criteriaResults || []).map(c => `
                       <tr>
-                        <td><strong>${comp.name}</strong></td>
-                        <td><span class="status-badge ${comp.type === 'Alternative' ? 'badge-success' : 'badge-neutral'}">${comp.type}</span></td>
-                        <td>${comp.co || 'CO1, CO2'}</td>
-                        <td>${comp.scored ? 'Scored' : 'Practice'}</td>
-                        <td><strong>${comp.marks}</strong></td>
+                        <td><strong>${c.criterionName}</strong></td>
+                        <td><strong>${c.awardedPoints}</strong> / ${c.maxPoints}</td>
+                        <td style="word-break: break-word; color: ${c.awardedPoints === 0 ? '#e11d48' : '#334155'};">
+                          ${c.supportingText || '[Missing from submission]'}
+                        </td>
+                        <td>${c.reason}</td>
+                        <td>
+                          <span class="status-badge ${c.reviewStatus === 'Verified' ? 'badge-success' : (c.reviewStatus === 'Missing' ? 'badge-danger' : 'badge-warning')}">
+                            ${c.reviewStatus}
+                          </span>
+                        </td>
                       </tr>
                     `).join("")}
                   </tbody>
                 </table>
               </div>
+            </div>
+          ` : '<p style="color: var(--text-muted); padding: 1rem 0;">No Annexure 9(b) report submitted yet.</p>'}
+        </div>
 
-              <div class="reflection-item" style="background: var(--pastel-mint); border-left-color: #22c55e;">
-                <div class="reflection-label" style="color: #166534;">What Worked Well in the Assessment Process?</div>
-                <div class="reflection-text">${c.whatWorked}</div>
+        <!-- ANNEXURE 9(c) REPORT SECTION -->
+        <div class="annexure-box mt-4">
+          <div class="annexure-header-row">
+            <div>
+              <span class="annexure-tag tag-9c">Annexure 9(c)</span>
+              <h3 style="display: inline-block; font-size: 1.15rem; margin-left: 0.5rem; color: var(--text-main);">
+                Reflection on Assessment Components
+              </h3>
+            </div>
+            ${c ? `
+              <div class="d-flex align-items-center gap-2">
+                <span class="status-badge badge-success">Quality: ${c.qualityScore}/100</span>
+                <span class="status-badge ${c.evaluationStatus === 'Verified' ? 'badge-success' : 'badge-warning'}">${c.evaluationStatus}</span>
+              </div>
+            ` : '<span class="status-badge badge-neutral">Not Submitted</span>'}
+          </div>
+
+          ${c ? `
+            <div class="mt-3">
+              <div class="grid grid-3 gap-2 mb-3 p-3" style="background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 0.8rem;">
+                <div><strong>Completeness:</strong> ${c.submissionCompleteness}%</div>
+                <div><strong>Evidence Compliance:</strong> ${c.evidenceCompliance}% (${c.evidenceStatus})</div>
+                <div><strong>Assessments Mapped:</strong> ${(c.standardizedAssessments || []).join(", ") || "Written Tests"}</div>
               </div>
 
-              <div class="reflection-item" style="background: var(--pastel-mint); border-left-color: #22c55e;">
-                <div class="reflection-label" style="color: #166534;">What Could Be Improved in Future Offerings?</div>
-                <div class="reflection-text">${c.whatCouldImprove}</div>
+              <!-- Criterion Breakdown Table -->
+              <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem;">Criterion-by-Criterion Evaluation & Supporting Text</h4>
+              <div class="table-responsive">
+                <table class="data-table" style="font-size: 0.775rem;">
+                  <thead>
+                    <tr>
+                      <th style="width: 22%;">Rubric Criterion</th>
+                      <th style="width: 10%;">Score</th>
+                      <th style="width: 32%;">Supporting Document Text</th>
+                      <th style="width: 26%;">Evaluation Rationale</th>
+                      <th style="width: 10%;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(c.criteriaResults || []).map(cr => `
+                      <tr>
+                        <td><strong>${cr.criterionName}</strong></td>
+                        <td><strong>${cr.awardedPoints}</strong> / ${cr.maxPoints}</td>
+                        <td style="word-break: break-word; color: ${cr.awardedPoints === 0 ? '#e11d48' : '#334155'};">
+                          ${cr.supportingText || '[Missing from submission]'}
+                        </td>
+                        <td>${cr.reason}</td>
+                        <td>
+                          <span class="status-badge ${cr.reviewStatus === 'Verified' ? 'badge-success' : (cr.reviewStatus === 'Missing' ? 'badge-danger' : 'badge-warning')}">
+                            ${cr.reviewStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
               </div>
             </div>
-          ` : `
-            <p style="color: var(--text-muted); padding: 1rem 0;">No Annexure 9(c) submitted for this faculty yet.</p>
-          `}
+          ` : '<p style="color: var(--text-muted); padding: 1rem 0;">No Annexure 9(c) report submitted yet.</p>'}
         </div>
       </div>
     `;
   }
 
   /**
-   * Render IQAC Department Summary (Simple, Basic, No graphs)
+   * Renders IQAC Institutional Analytics
    */
-  renderIqacSummary() {
-    const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
-    
-    // 1. Department Summary Table
-    const deptTbody = document.getElementById("departments-summary-tbody");
-    if (deptTbody) {
-      deptTbody.innerHTML = this.departments.map(d => {
-        const stats = analytics.deptStats[d.name] || {
-          avg9b: 0, avg9c: 0, avgComposite: 0, submittedCount: 0
-        };
+  renderIqacAnalytics() {
+    const filteredRecords = this.getFilteredFacultyRecords();
+    const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, filteredRecords);
 
-        return `
-          <tr>
-            <td><strong>${d.name}</strong> (${d.code})</td>
-            <td>${d.hod}</td>
-            <td>${d.totalFaculty}</td>
-            <td>${stats.avg9b > 0 ? `${stats.avg9b}/100` : '--'}</td>
-            <td>${stats.avg9c > 0 ? `${stats.avg9c}/100` : '--'}</td>
-            <td><strong style="color: #4338ca;">${stats.avgComposite > 0 ? `${stats.avgComposite}/100` : '--'}</strong></td>
-            <td>
-              <span class="status-badge ${stats.submittedCount > 0 ? 'badge-success' : 'badge-neutral'}">
-                ${stats.submittedCount} Submitted
-              </span>
-            </td>
-            <td>
-              <button class="btn btn-outline btn-sm view-dept-action-btn" data-dept="${d.name}">
-                View Portfolios →
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join("");
+    this.renderAnalyticsHighlights(filteredRecords);
+    this.renderPedagogyAnalyticsTable(filteredRecords);
+    this.renderAssessmentAnalyticsTable(filteredRecords);
+    this.renderComplianceAndRecommendations(filteredRecords);
+    this.renderDepartmentSummaryTable(analytics);
+  }
 
-      deptTbody.querySelectorAll(".view-dept-action-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const dept = btn.getAttribute("data-dept");
-          this.selectedDepartment = dept;
-          const mainDeptSelect = document.getElementById("dept-select-main");
-          if (mainDeptSelect) mainDeptSelect.value = dept;
-          this.populateFacultyDropdown();
-          this.renderFacultyDossier();
-          document.getElementById("tab-portfolios")?.click();
-        });
+  getFilteredFacultyRecords() {
+    return this.facultyRecords.filter(f => {
+      if (this.analyticsFilters.department !== "ALL" && f.department !== this.analyticsFilters.department) {
+        return false;
+      }
+      if (this.analyticsFilters.programme !== "ALL") {
+        const prog = (f.programme || "").toUpperCase();
+        if (this.analyticsFilters.programme === "PG" && !prog.includes("M.SC") && !prog.includes("POSTGRADUATE") && !prog.includes("MBA")) return false;
+        if (this.analyticsFilters.programme === "UG" && !prog.includes("B.SC") && !prog.includes("UNDERGRADUATE") && !prog.includes("BBA")) return false;
+      }
+      return true;
+    });
+  }
+
+  renderAnalyticsHighlights(records) {
+    const grid = document.getElementById("analytics-highlights-grid");
+    if (!grid) return;
+
+    const pedagogyCounts = {};
+    const assessmentCounts = {};
+
+    records.forEach(f => {
+      (f.annexure9b?.standardizedPedagogies || []).forEach(p => {
+        pedagogyCounts[p] = (pedagogyCounts[p] || 0) + 1;
       });
+      (f.annexure9c?.standardizedAssessments || []).forEach(a => {
+        assessmentCounts[a] = (assessmentCounts[a] || 0) + 1;
+      });
+    });
+
+    const sortedPed = Object.entries(pedagogyCounts).sort((a, b) => b[1] - a[1]);
+    const sortedAssess = Object.entries(assessmentCounts).sort((a, b) => b[1] - a[1]);
+
+    const mostPed = sortedPed.length > 0 ? `${sortedPed[0][0]} (${sortedPed[0][1]} uses)` : "Lecture (N/A)";
+    const leastPed = sortedPed.length > 1 ? `${sortedPed[sortedPed.length - 1][0]} (${sortedPed[sortedPed.length - 1][1]} uses)` : "Case-Based (0 uses)";
+    const mostAssess = sortedAssess.length > 0 ? `${sortedAssess[0][0]} (${sortedAssess[0][1]} uses)` : "Written Tests (N/A)";
+    const totalSubs = records.filter(f => f.annexure9b).length + records.filter(f => f.annexure9c).length;
+
+    grid.innerHTML = `
+      <div class="metric-card p-3">
+        <div class="metric-label">Most Reported Pedagogy</div>
+        <div class="metric-value-row">
+          <span class="metric-value text-indigo" style="font-size: 1.15rem;">${mostPed}</span>
+        </div>
+        <div class="metric-subtext">Highest departmental adoption</div>
+      </div>
+
+      <div class="metric-card p-3">
+        <div class="metric-label">Least Reported Pedagogy</div>
+        <div class="metric-value-row">
+          <span class="metric-value text-rose" style="font-size: 1.15rem;">${leastPed}</span>
+        </div>
+        <div class="metric-subtext">Candidate for faculty development</div>
+      </div>
+
+      <div class="metric-card p-3">
+        <div class="metric-label">Most Reported Assessment</div>
+        <div class="metric-value-row">
+          <span class="metric-value text-emerald" style="font-size: 1.15rem;">${mostAssess}</span>
+        </div>
+        <div class="metric-subtext">Continuous internal evaluation mode</div>
+      </div>
+
+      <div class="metric-card p-3">
+        <div class="metric-label">Audit Dataset Size</div>
+        <div class="metric-value-row">
+          <span class="metric-value text-cyan" style="font-size: 1.15rem;">${records.length} Faculty</span>
+        </div>
+        <div class="metric-subtext">${totalSubs} total evaluated forms</div>
+      </div>
+    `;
+  }
+
+  renderPedagogyAnalyticsTable(records) {
+    const tbody = document.getElementById("pedagogy-analytics-tbody");
+    if (!tbody) return;
+
+    const totalFacultyCount = Math.max(1, records.length);
+    const stats = {};
+
+    STANDARDIZED_PEDAGOGIES.forEach(p => {
+      stats[p] = { category: p, uses: 0, distinctFaculty: new Set() };
+    });
+
+    records.forEach(f => {
+      if (f.annexure9b) {
+        (f.annexure9b.standardizedPedagogies || []).forEach(p => {
+          if (!stats[p]) stats[p] = { category: p, uses: 0, distinctFaculty: new Set() };
+          stats[p].uses++;
+          stats[p].distinctFaculty.add(f.id);
+        });
+      }
+    });
+
+    tbody.innerHTML = STANDARDIZED_PEDAGOGIES.map(p => {
+      const s = stats[p] || { uses: 0, distinctFaculty: new Set() };
+      const adopterCount = s.distinctFaculty.size;
+      const rate = Math.round((adopterCount / totalFacultyCount) * 100);
+
+      return `
+        <tr>
+          <td><strong>${p}</strong></td>
+          <td>${s.uses}</td>
+          <td>${adopterCount} Faculty</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+                <div style="width: ${rate}%; height: 100%; background: #6366f1;"></div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 700; min-width: 35px;">${rate}%</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  renderAssessmentAnalyticsTable(records) {
+    const tbody = document.getElementById("assessment-analytics-tbody");
+    if (!tbody) return;
+
+    const totalFacultyCount = Math.max(1, records.length);
+    const stats = {};
+
+    STANDARDIZED_ASSESSMENTS.forEach(a => {
+      stats[a] = { category: a, uses: 0, distinctFaculty: new Set() };
+    });
+
+    records.forEach(f => {
+      if (f.annexure9c) {
+        (f.annexure9c.standardizedAssessments || []).forEach(a => {
+          if (!stats[a]) stats[a] = { category: a, uses: 0, distinctFaculty: new Set() };
+          stats[a].uses++;
+          stats[a].distinctFaculty.add(f.id);
+        });
+      }
+    });
+
+    tbody.innerHTML = STANDARDIZED_ASSESSMENTS.map(a => {
+      const s = stats[a] || { uses: 0, distinctFaculty: new Set() };
+      const adopterCount = s.distinctFaculty.size;
+      const rate = Math.round((adopterCount / totalFacultyCount) * 100);
+
+      return `
+        <tr>
+          <td><strong>${a}</strong></td>
+          <td>${s.uses}</td>
+          <td>${adopterCount} Faculty</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+                <div style="width: ${rate}%; height: 100%; background: #22c55e;"></div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 700; min-width: 35px;">${rate}%</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  renderComplianceAndRecommendations(records) {
+    const statsContainer = document.getElementById("compliance-stats-container");
+    const recContainer = document.getElementById("institutional-recommendations-container");
+
+    if (statsContainer) {
+      let totalSubs = 0;
+      let coAlignedCount = 0;
+      let verifiedEvidenceCount = 0;
+
+      records.forEach(f => {
+        if (f.annexure9b) {
+          totalSubs++;
+          if (f.annexure9b.criteriaResults?.find(c => c.criterionId === 'coAlignment')?.awardedPoints > 0) coAlignedCount++;
+          if (f.annexure9b.evidenceStatus === 'Verified') verifiedEvidenceCount++;
+        }
+        if (f.annexure9c) {
+          totalSubs++;
+          if (f.annexure9c.criteriaResults?.find(c => c.criterionId === 'coMapping')?.awardedPoints > 0) coAlignedCount++;
+          if (f.annexure9c.evidenceStatus === 'Verified') verifiedEvidenceCount++;
+        }
+      });
+
+      const coRate = totalSubs > 0 ? Math.round((coAlignedCount / totalSubs) * 100) : 0;
+      const evRate = totalSubs > 0 ? Math.round((verifiedEvidenceCount / totalSubs) * 100) : 0;
+
+      statsContainer.innerHTML = `
+        <div style="font-size: 0.85rem; line-height: 1.8;">
+          <div class="flex-between py-1" style="border-bottom: 1px solid #f1f5f9;">
+            <span>Direct Course Outcome (CO) Mapping Rate:</span>
+            <strong>${coRate}% (${coAlignedCount} / ${totalSubs} submissions)</strong>
+          </div>
+          <div class="flex-between py-1" style="border-bottom: 1px solid #f1f5f9;">
+            <span>Verified Evidence Attachment Rate:</span>
+            <strong>${evRate}% (${verifiedEvidenceCount} / ${totalSubs} submissions)</strong>
+          </div>
+          <div class="flex-between py-1">
+            <span>Submissions Requiring Manual Review:</span>
+            <strong style="color: #ea580c;">${totalSubs - verifiedEvidenceCount} submissions</strong>
+          </div>
+        </div>
+      `;
     }
 
-    // 2. All Faculty Registry Table
-    const facultyTbody = document.getElementById("all-faculty-registry-tbody");
-    if (facultyTbody) {
-      facultyTbody.innerHTML = this.facultyRecords.map(f => `
+    if (recContainer) {
+      recContainer.innerHTML = `
+        <ul style="font-size: 0.825rem; color: var(--text-body); margin-left: 1.15rem; line-height: 1.5;">
+          <li><strong>Organize Hands-on Rubric Workshop:</strong> Standardize explicit Course Outcome (CO1-CO5) mapping across all continuous internal assessments.</li>
+          <li><strong>Strengthen Evidence Portfolios:</strong> Ensure all faculty attach soft copies of student test scripts, code PR reviews, or geotagged session logs.</li>
+          <li><strong>Expand Alternative Assessments:</strong> Incentivize departments relying exclusively on written tests to integrate project sprints and viva-voce evaluations.</li>
+        </ul>
+      `;
+    }
+  }
+
+  renderDepartmentSummaryTable(analytics) {
+    const tbody = document.getElementById("departments-summary-tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = this.departments.map(d => {
+      const stats = analytics.deptStats[d.name] || {
+        avg9b: 0, avg9c: 0, avgComposite: 0, submittedCount: 0
+      };
+
+      return `
         <tr>
-          <td><strong>${f.facultyName}</strong></td>
-          <td>${f.department}</td>
-          <td>${f.courseTitle}</td>
-          <td>${f.annexure9b ? `${f.annexure9b.score}/100` : '--'}</td>
-          <td>${f.annexure9c ? `${f.annexure9c.score}/100` : '--'}</td>
-          <td><strong style="color: #166534;">${f.compositeScore}/100</strong></td>
-          <td><span class="status-badge ${f.statusBand === 'Exemplary' ? 'badge-success' : 'badge-indigo'}">${f.statusBand}</span></td>
+          <td><strong>${d.name}</strong> (${d.code})</td>
+          <td>${d.hod}</td>
+          <td>${d.totalFaculty}</td>
+          <td>${stats.submittedCount} Forms</td>
+          <td>${stats.avg9b > 0 ? `${stats.avg9b}/100` : '--'}</td>
+          <td>${stats.avg9c > 0 ? `${stats.avg9c}/100` : '--'}</td>
+          <td><strong style="color: #4338ca;">${stats.avgComposite > 0 ? `${stats.avgComposite}/100` : '--'}</strong></td>
+          <td>${stats.submittedCount > 0 ? `${analytics.evidenceComplianceRate}%` : '--'}</td>
+          <td>
+            <span class="status-badge ${stats.submittedCount > 0 ? 'badge-success' : 'badge-neutral'}">
+              ${stats.submittedCount > 0 ? 'Active' : 'Pending'}
+            </span>
+          </td>
         </tr>
+      `;
+    }).join("");
+  }
+
+  updateAnalyticsFilters() {
+    this.analyticsFilters.academicYear = document.getElementById("analytics-filter-ay")?.value || "ALL";
+    this.analyticsFilters.semester = document.getElementById("analytics-filter-sem")?.value || "ALL";
+    this.analyticsFilters.department = document.getElementById("analytics-filter-dept")?.value || "ALL";
+    this.analyticsFilters.programme = document.getElementById("analytics-filter-prog")?.value || "ALL";
+    this.analyticsFilters.annexure = document.getElementById("analytics-filter-annexure")?.value || "ALL";
+
+    this.renderIqacAnalytics();
+  }
+
+  populateDepartmentDropdowns() {
+    const mainDeptSelect = document.getElementById("dept-select-main");
+    const filterDeptSelect = document.getElementById("analytics-filter-dept");
+
+    const deptOptionsHtml = this.departments.map(d => `
+      <option value="${d.name}" ${d.name === this.selectedDepartment ? 'selected' : ''}>
+        ${d.name} (${d.code})
+      </option>
+    `).join("");
+
+    if (mainDeptSelect) mainDeptSelect.innerHTML = deptOptionsHtml;
+
+    if (filterDeptSelect) {
+      filterDeptSelect.innerHTML = `<option value="ALL">All Departments</option>` + this.departments.map(d => `
+        <option value="${d.name}">${d.name}</option>
       `).join("");
+    }
+
+    this.populateFacultyDropdown();
+  }
+
+  populateFacultyDropdown() {
+    const facultySelect = document.getElementById("faculty-select");
+    if (!facultySelect) return;
+
+    const filtered = this.facultyRecords.filter(f => f.department === this.selectedDepartment);
+    if (filtered.length === 0) {
+      facultySelect.innerHTML = `<option value="">No faculty members in this department</option>`;
+      return;
+    }
+
+    facultySelect.innerHTML = filtered.map(f => `
+      <option value="${f.id}" ${f.id === this.selectedFacultyId ? 'selected' : ''}>
+        ${f.facultyName} (${f.courseCode || 'CRS'}) - Score: ${f.compositeScore}/100
+      </option>
+    `).join("");
+
+    if (!filtered.some(f => f.id === this.selectedFacultyId) && filtered.length > 0) {
+      this.selectedFacultyId = filtered[0].id;
     }
   }
 
   /**
-   * Export All Faculty Records to CSV (Working, Real Data!)
+   * Updates Top Dashboard Metric Ribbon (The 4 Specified Metrics)
    */
-  exportAllToCsv() {
-    const headers = [
-      "Faculty ID",
-      "Faculty Name",
-      "Department",
-      "Course Code",
-      "Course Title",
-      "Annexure 9(b) Submitted",
-      "Annexure 9(b) Score",
-      "Teaching Method (9b)",
-      "Annexure 9(c) Submitted",
-      "Annexure 9(c) Score",
-      "Composite Quality Score",
-      "Evaluation Band",
-      "Academic Year"
-    ];
+  updateMetricRibbon() {
+    const totalSubsEl = document.getElementById("stat-total-submissions");
+    const reviewReqEl = document.getElementById("stat-review-required");
+    const evCompEl = document.getElementById("stat-evidence-compliance");
+    const deptsRepEl = document.getElementById("stat-depts-represented");
 
-    const rows = this.facultyRecords.map(f => [
-      f.id,
-      `"${f.facultyName}"`,
-      `"${f.department}"`,
-      `"${f.courseCode || ''}"`,
-      `"${f.courseTitle || ''}"`,
-      f.annexure9b?.submitted ? "Yes" : "No",
-      f.annexure9b?.score || "",
-      `"${f.annexure9b?.teachingMethod || ''}"`,
-      f.annexure9c?.submitted ? "Yes" : "No",
-      f.annexure9c?.score || "",
-      f.compositeScore,
-      f.statusBand,
-      `"${f.academicYear || '2025-26'}"`
+    let count9b = 0;
+    let count9c = 0;
+    let reviewCount = 0;
+    let verifiedEvidenceCount = 0;
+    const deptsSet = new Set();
+
+    this.facultyRecords.forEach(f => {
+      deptsSet.add(f.department);
+      if (f.annexure9b) {
+        count9b++;
+        if (f.annexure9b.evaluationStatus !== "Verified") reviewCount++;
+        if (f.annexure9b.evidenceStatus === "Verified") verifiedEvidenceCount++;
+      }
+      if (f.annexure9c) {
+        count9c++;
+        if (f.annexure9c.evaluationStatus !== "Verified") reviewCount++;
+        if (f.annexure9c.evidenceStatus === "Verified") verifiedEvidenceCount++;
+      }
+    });
+
+    const totalSubmissions = count9b + count9c;
+    const evRate = totalSubmissions > 0 ? Math.round((verifiedEvidenceCount / totalSubmissions) * 100) : 0;
+
+    if (totalSubsEl) totalSubsEl.textContent = totalSubmissions;
+    document.getElementById("stat-submissions-split")?.replaceChildren(document.createTextNode(`${count9b} (9b) • ${count9c} (9c)`));
+
+    if (reviewReqEl) reviewReqEl.textContent = reviewCount;
+    if (evCompEl) evCompEl.textContent = `${evRate}%`;
+    document.getElementById("stat-evidence-count")?.replaceChildren(document.createTextNode(`${verifiedEvidenceCount} Verified`));
+
+    if (deptsRepEl) deptsRepEl.textContent = deptsSet.size;
+  }
+
+  renderAll() {
+    this.updateMetricRibbon();
+    this.renderSubmissionsRegistryTable();
+    this.renderFacultyDossier();
+    this.renderIqacAnalytics();
+  }
+
+  /**
+   * EXPORTS
+   */
+  exportInstitutionalExcelWorkbook() {
+    const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
+
+    const escapeXml = (unsafe) => {
+      if (unsafe === undefined || unsafe === null) return "";
+      return unsafe.toString().replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '&': return '&amp;';
+          case '\'': return '&apos;';
+          case '"': return '&quot;';
+          default: return c;
+        }
+      });
+    };
+
+    const makeRow = (cells) => {
+      const cXml = cells.map(cell => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join("");
+      return `<Row>${cXml}</Row>`;
+    };
+
+    // Sheet 1: Pedagogy Usage
+    const pedHeaders = ["Pedagogical Strategy", "Documented Uses", "Distinct Faculty Adopters", "Adoption Rate (%)"];
+    const pedRows = STANDARDIZED_PEDAGOGIES.map(p => {
+      let uses = 0;
+      const adopters = new Set();
+      this.facultyRecords.forEach(f => {
+        if (f.annexure9b?.standardizedPedagogies?.includes(p)) {
+          uses++;
+          adopters.add(f.id);
+        }
+      });
+      return [p, uses, adopters.size, `${Math.round((adopters.size / Math.max(1, this.facultyRecords.length)) * 100)}%`];
+    });
+
+    // Sheet 2: Assessment Usage
+    const assessHeaders = ["Assessment Method", "Documented Uses", "Distinct Faculty Adopters", "Adoption Rate (%)"];
+    const assessRows = STANDARDIZED_ASSESSMENTS.map(a => {
+      let uses = 0;
+      const adopters = new Set();
+      this.facultyRecords.forEach(f => {
+        if (f.annexure9c?.standardizedAssessments?.includes(a)) {
+          uses++;
+          adopters.add(f.id);
+        }
+      });
+      return [a, uses, adopters.size, `${Math.round((adopters.size / Math.max(1, this.facultyRecords.length)) * 100)}%`];
+    });
+
+    // Sheet 3: Department Summary
+    const deptHeaders = ["Department", "Code", "HOD", "Total Faculty", "Submissions", "Pedagogy Avg (9b)", "Assessment Avg (9c)", "Composite Index", "Status"];
+    const deptRows = this.departments.map(d => {
+      const s = analytics.deptStats[d.name] || {};
+      return [d.name, d.code, d.hod, d.totalFaculty, s.submittedCount || 0, s.avg9b || 0, s.avg9c || 0, s.avgComposite || 0, s.submittedCount > 0 ? "Active" : "Pending"];
+    });
+
+    // Sheet 4: Raw Submissions Data
+    const rawHeaders = ["Submission ID", "Date", "Faculty Name", "Department", "Course", "Annexure", "Completeness (%)", "Evidence Status", "Quality Score", "Verification Status"];
+    const rawRows = this.submissionsLog.map(s => [
+      s.id, s.date, s.facultyName, s.department, s.course, s.annexure, s.completeness, s.evidenceStatus, s.qualityScore, s.evaluationStatus
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const xmlWorkbook = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Worksheet ss:Name="Department Summary">
+  <Table>
+   ${makeRow(deptHeaders)}
+   ${deptRows.map(r => makeRow(r)).join("\n   ")}
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Pedagogy Usage">
+  <Table>
+   ${makeRow(pedHeaders)}
+   ${pedRows.map(r => makeRow(r)).join("\n   ")}
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Assessment Usage">
+  <Table>
+   ${makeRow(assessHeaders)}
+   ${assessRows.map(r => makeRow(r)).join("\n   ")}
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Raw Submissions">
+  <Table>
+   ${makeRow(rawHeaders)}
+   ${rawRows.map(r => makeRow(r)).join("\n   ")}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xmlWorkbook], { type: 'application/vnd.ms-excel;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `St_Josephs_IQAC_Faculty_Evaluation_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `St_Josephs_IQAC_Institutional_Audit_${new Date().toISOString().split('T')[0]}.xls`;
     a.click();
     URL.revokeObjectURL(url);
 
-    this.showToast("All faculty reports exported to CSV successfully!", "success");
+    this.showToast("Multi-sheet Excel workbook downloaded successfully!", "success");
   }
 
-  /**
-   * Export Department Summary to CSV
-   */
+  exportSubmissionsCsv() {
+    const headers = ["Submission ID", "Date", "Faculty Name", "Department", "Annexure", "Course", "Completeness (%)", "Evidence Status", "Quality Score", "Evaluation Status"];
+    const rows = this.submissionsLog.map(s => [
+      s.id,
+      s.date,
+      `"${s.facultyName}"`,
+      `"${s.department}"`,
+      `"${s.annexure}"`,
+      `"${s.course}"`,
+      s.completeness,
+      s.evidenceStatus,
+      s.qualityScore,
+      `"${s.evaluationStatus}"`
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    this.downloadCsvFile(csvContent, `St_Josephs_IQAC_Submissions_${new Date().toISOString().split('T')[0]}.csv`);
+  }
+
   exportDepartmentSummaryCsv() {
     const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
-    const headers = ["Department", "Code", "HOD", "Total Faculty", "Submissions Count", "Annexure 9(b) Avg", "Annexure 9(c) Avg", "Overall Quality Index"];
-
+    const headers = ["Department", "Code", "HOD", "Total Faculty", "Submissions", "Pedagogy Avg (9b)", "Assessment Avg (9c)", "Composite Index"];
     const rows = this.departments.map(d => {
       const s = analytics.deptStats[d.name] || {};
       return [
-        `"${d.name}"`,
-        d.code,
-        `"${d.hod}"`,
-        d.totalFaculty,
-        s.submittedCount || 0,
-        s.avg9b || 0,
-        s.avg9c || 0,
-        s.avgComposite || 0
+        `"${d.name}"`, d.code, `"${d.hod}"`, d.totalFaculty, s.submittedCount || 0, s.avg9b || 0, s.avg9c || 0, s.avgComposite || 0
       ];
     });
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    this.downloadCsvFile(csvContent, `St_Josephs_IQAC_Department_Summary_${new Date().toISOString().split('T')[0]}.csv`);
+  }
+
+  exportSelectedFacultyCsv() {
+    const faculty = this.facultyRecords.find(f => f.id === this.selectedFacultyId);
+    if (!faculty) return;
+
+    const headers = ["Criterion ID", "Criterion Name", "Max Points", "Awarded Points", "Document Section", "Supporting Text", "Evaluation Rationale", "Review Status"];
+    const rows = [];
+
+    (faculty.annexure9b?.criteriaResults || []).forEach(c => {
+      rows.push([c.criterionId, `"${c.criterionName}"`, c.maxPoints, c.awardedPoints, `"${c.documentSection}"`, `"${c.supportingText?.replace(/"/g, '""')}"`, `"${c.reason?.replace(/"/g, '""')}"`, c.reviewStatus]);
+    });
+
+    (faculty.annexure9c?.criteriaResults || []).forEach(c => {
+      rows.push([c.criterionId, `"${c.criterionName}"`, c.maxPoints, c.awardedPoints, `"${c.documentSection}"`, `"${c.supportingText?.replace(/"/g, '""')}"`, `"${c.reason?.replace(/"/g, '""')}"`, c.reviewStatus]);
+    });
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    this.downloadCsvFile(csvContent, `Faculty_Report_${faculty.facultyName.replace(/[^a-zA-Z]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+  }
+
+  downloadCsvFile(csvContent, fileName) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `St_Josephs_IQAC_Department_Summary_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
-
-    this.showToast("Department summary exported to CSV!", "success");
+    this.showToast(`Exported ${fileName} successfully!`, "success");
   }
 
-  /**
-   * Formal Academic Appraisal Dossier for Printing / PDF
-   */
-  openPrintModal() {
-    const faculty = this.facultyRecords.find(f => f.id === this.selectedFacultyId) || this.facultyRecords[0];
-    if (!faculty) return;
-
+  openPrintModal(mode = "faculty") {
     const modal = document.getElementById("dossier-modal");
     const content = document.getElementById("modal-content-area");
     if (!modal || !content) return;
 
-    const b = faculty.annexure9b;
-    const c = faculty.annexure9c;
-
-    content.innerHTML = `
-      <div style="padding: 1.5rem; font-family: sans-serif; color: #0f172a; background: white;">
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.5rem;">
-          <h2 style="font-size: 1.35rem; font-weight: 800; text-transform: uppercase; margin: 0; color: #0f172a;">${COLLEGE_INFO.institutionName}</h2>
-          <h4 style="font-size: 0.95rem; font-weight: 600; color: #475569; margin: 0.2rem 0;">${COLLEGE_INFO.location}</h4>
-          <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0.35rem 0 0; color: #1e293b;">${COLLEGE_INFO.cell}</h3>
-          <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0;">Faculty Pedagogical & Assessment Practices Appraisal Dossier</p>
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
-          <tr>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc; width: 22%;">Faculty Name:</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.facultyName}</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc; width: 22%;">Faculty ID:</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.id}</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc;">Department:</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.department}</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc;">Designation:</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.designation}</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc;">Course Taught:</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.courseCode || ''} ${faculty.courseTitle}</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc;">Composite Index:</td>
-            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #16a34a;">${faculty.compositeScore}/100 (${faculty.statusBand})</td>
-          </tr>
-        </table>
-
-        <h4 style="margin: 1rem 0 0.5rem; color: #0f172a; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
-          1. Annexure 9(b): Pedagogical Approach & Reflection (Score: ${b ? `${b.score}/100` : 'Pending'})
-        </h4>
-        <p style="font-size: 0.85rem; margin-bottom: 0.4rem;"><strong>Teaching Method:</strong> ${b?.teachingMethod || 'N/A'}</p>
-        <p style="font-size: 0.825rem; color: #334155; margin-bottom: 0.4rem;"><strong>Planning & Delivery:</strong> ${b?.inClassDelivery || 'N/A'}</p>
-        <p style="font-size: 0.825rem; color: #334155; margin-bottom: 1rem;"><strong>Impact:</strong> ${b?.impact || 'N/A'}</p>
-
-        <h4 style="margin: 1rem 0 0.5rem; color: #0f172a; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
-          2. Annexure 9(c): Assessment Components & Reflection (Score: ${c ? `${c.score}/100` : 'Pending'})
-        </h4>
-        <p style="font-size: 0.85rem; margin-bottom: 0.4rem;"><strong>Assessment Components:</strong> ${c?.components?.length || 0} evaluated</p>
-        <p style="font-size: 0.825rem; color: #334155; margin-bottom: 0.4rem;"><strong>What Worked:</strong> ${c?.whatWorked || 'N/A'}</p>
-        <p style="font-size: 0.825rem; color: #334155; margin-bottom: 1.5rem;"><strong>Areas for Improvement:</strong> ${c?.whatCouldImprove || 'N/A'}</p>
-
-        <div style="display: flex; justify-content: space-between; margin-top: 3.5rem; padding-top: 1rem; border-top: 1px dashed #94a3b8; font-size: 0.85rem;">
-          <div style="text-align: center;">
-            <div style="margin-bottom: 2.5rem;">________________________</div>
-            <strong>Faculty Signature</strong>
+    if (mode === "institutional") {
+      const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
+      content.innerHTML = `
+        <div style="padding: 1.5rem; font-family: sans-serif; color: #0f172a; background: white;">
+          <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 800; text-transform: uppercase; margin: 0;">${COLLEGE_INFO.institutionName}</h2>
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: #475569; margin: 0.2rem 0;">${COLLEGE_INFO.location}</h4>
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0.35rem 0 0;">${COLLEGE_INFO.cell}</h3>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0;">Consolidated Institutional Pedagogical & Assessment Audit Report • AY 2025-26</p>
           </div>
-          <div style="text-align: center;">
-            <div style="margin-bottom: 2.5rem;">________________________</div>
-            <strong>Head of Department (HOD)</strong>
-          </div>
-          <div style="text-align: center;">
-            <div style="margin-bottom: 2.5rem;">________________________</div>
-            <strong>IQAC Coordinator</strong>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.85rem;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: left;">Department</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">HOD</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">Faculty</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">Submissions</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">Pedagogy Avg (9b)</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">Assessment Avg (9c)</th>
+                <th style="padding: 6px; border: 1px solid #cbd5e1;">Composite Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.departments.map(d => {
+                const s = analytics.deptStats[d.name] || {};
+                return `
+                  <tr>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;"><strong>${d.name}</strong></td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${d.hod}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${d.totalFaculty}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${s.submittedCount || 0}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${s.avg9b || '--'}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${s.avg9c || '--'}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #4338ca;">${s.avgComposite || '--'}</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+
+          <div style="display: flex; justify-content: space-between; margin-top: 3.5rem; padding-top: 1rem; border-top: 1px dashed #94a3b8; font-size: 0.85rem;">
+            <div style="text-align: center;"><div>________________________</div><strong>IQAC Coordinator</strong></div>
+            <div style="text-align: center;"><div>________________________</div><strong>Dean of Academics</strong></div>
+            <div style="text-align: center;"><div>________________________</div><strong>Principal</strong></div>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      const faculty = this.facultyRecords.find(f => f.id === this.selectedFacultyId) || this.facultyRecords[0];
+      if (!faculty) return;
+      const b = faculty.annexure9b;
+      const c = faculty.annexure9c;
+
+      content.innerHTML = `
+        <div style="padding: 1.5rem; font-family: sans-serif; color: #0f172a; background: white;">
+          <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 800; text-transform: uppercase; margin: 0;">${COLLEGE_INFO.institutionName}</h2>
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: #475569; margin: 0.2rem 0;">${COLLEGE_INFO.location}</h4>
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0.35rem 0 0;">${COLLEGE_INFO.cell}</h3>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0;">Individual Faculty Pedagogical Appraisal Dossier • AY 2025-26</p>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
+            <tr>
+              <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc; width: 22%;">Faculty Name:</td>
+              <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.facultyName}</td>
+              <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc; width: 22%;">Department:</td>
+              <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.department}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc;">Course:</td>
+              <td style="padding: 6px; border: 1px solid #cbd5e1;">${faculty.courseCode || ''} ${faculty.courseTitle}</td>
+              <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; background: #f8fafc;">Quality Score:</td>
+              <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #16a34a;">${faculty.compositeScore}/100 (${faculty.evaluationStatus || 'Provisional'})</td>
+            </tr>
+          </table>
+
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f8fafc; border-left: 3px solid #6366f1; font-size: 0.825rem;">
+            <strong>Deficiencies & Improvements:</strong>
+            <p style="margin: 0.25rem 0 0;">${[...(b?.deficiencies || []), ...(c?.deficiencies || [])].join("; ") || "All criteria meet institutional benchmarks."}</p>
+          </div>
+
+          <h4 style="margin: 1rem 0 0.5rem; color: #0f172a; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+            1. Annexure 9(b): Pedagogical Reflection (Score: ${b ? `${b.qualityScore}/100` : 'Not Submitted'})
+          </h4>
+          <p style="font-size: 0.85rem; margin-bottom: 0.4rem;"><strong>Teaching Method:</strong> ${b?.teachingMethod || 'N/A'}</p>
+          <p style="font-size: 0.825rem; color: #334155; margin-bottom: 0.4rem;"><strong>Delivery:</strong> ${b?.inClassDelivery || 'N/A'}</p>
+          <p style="font-size: 0.825rem; color: #334155; margin-bottom: 1rem;"><strong>Impact:</strong> ${b?.impact || 'N/A'}</p>
+
+          <h4 style="margin: 1rem 0 0.5rem; color: #0f172a; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+            2. Annexure 9(c): Assessment Components (Score: ${c ? `${c.qualityScore}/100` : 'Not Submitted'})
+          </h4>
+          <p style="font-size: 0.85rem; margin-bottom: 0.4rem;"><strong>Reflection:</strong> ${c?.whatWorked || 'N/A'}</p>
+          <p style="font-size: 0.825rem; color: #334155; margin-bottom: 1.5rem;"><strong>Areas for Improvement:</strong> ${c?.whatCouldImprove || 'N/A'}</p>
+
+          <div style="display: flex; justify-content: space-between; margin-top: 3.5rem; padding-top: 1rem; border-top: 1px dashed #94a3b8; font-size: 0.85rem;">
+            <div style="text-align: center;"><div>________________________</div><strong>Faculty Signature</strong></div>
+            <div style="text-align: center;"><div>________________________</div><strong>Head of Department (HOD)</strong></div>
+            <div style="text-align: center;"><div>________________________</div><strong>IQAC Coordinator</strong></div>
+          </div>
+        </div>
+      `;
+    }
 
     modal.classList.remove("hidden");
   }
@@ -872,7 +1816,7 @@ class PedApp {
   }
 }
 
-// Bootstrap app
+// Bootstrap Application
 document.addEventListener("DOMContentLoaded", () => {
   new PedApp();
 });

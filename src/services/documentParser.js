@@ -1,8 +1,8 @@
 /**
- * PED PLATFORM - ROBUST DOCUMENT PARSER SERVICE
- * Parses Word (.docx), PDF (.pdf), JSON, and CSV files.
- * Uses DOMParser on Mammoth HTML tables to extract cells from
- * St. Joseph's College IQAC Annexure 9(b) and 9(c) templates.
+ * PED PLATFORM - ROBUST AUTOMATIC DOCUMENT PARSER SERVICE
+ * Parses Word (.docx) and PDF (.pdf) documents automatically in bulk.
+ * Uses DOMParser on Mammoth HTML tables and pdfjs-dist on PDFs to extract cells from
+ * St. Joseph's College IQAC Annexure 9(b) and 9(c) templates without requiring manual user editing.
  */
 
 import mammoth from 'mammoth';
@@ -27,7 +27,12 @@ export class DocumentParser {
     } else if (fileName.endsWith('.csv')) {
       return await file.text();
     } else {
-      throw new Error("Unsupported format. Please upload a Word (.docx) or PDF (.pdf) file.");
+      return {
+        fileName: file.name,
+        extractionFailed: true,
+        errorMessage: "Unsupported format. Please upload Word (.docx) or PDF (.pdf) files.",
+        isCorrupted: true
+      };
     }
   }
 
@@ -35,24 +40,34 @@ export class DocumentParser {
    * Parse Word (.docx) document
    */
   static async parseDocx(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
-    const textResult = await mammoth.extractRawText({ arrayBuffer });
-    
-    const html = htmlResult.value || "";
-    const rawText = textResult.value || "";
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+      const textResult = await mammoth.extractRawText({ arrayBuffer });
+      
+      const html = htmlResult.value || "";
+      const rawText = textResult.value || "";
 
-    return this.extractFromHtmlAndText(html, rawText, file.name);
+      return this.extractFromHtmlAndText(html, rawText, file.name);
+    } catch (err) {
+      console.error("Docx parsing failed:", err);
+      return {
+        fileName: file.name,
+        extractionFailed: true,
+        errorMessage: err.message || "Failed to read docx archive.",
+        isCorrupted: true
+      };
+    }
   }
 
   /**
    * Parse PDF document
    */
   static async parsePdf(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    let text = "";
-
     try {
+      const arrayBuffer = await file.arrayBuffer();
+      let text = "";
+
       const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
       if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
@@ -67,12 +82,17 @@ export class DocumentParser {
         const pageText = textContent.items.map(item => item.str).join(" ");
         text += pageText + "\n";
       }
-    } catch (e) {
-      console.warn("PDF parse fallback:", e);
-      text = file.name;
-    }
 
-    return this.extractFromHtmlAndText("", text, file.name);
+      return this.extractFromHtmlAndText("", text, file.name);
+    } catch (e) {
+      console.warn("PDF parse fallback/failure:", e);
+      return {
+        fileName: file.name,
+        extractionFailed: true,
+        errorMessage: e.message || "PDF parse error",
+        isCorrupted: true
+      };
+    }
   }
 
   /**
@@ -102,6 +122,7 @@ export class DocumentParser {
     let inClassDelivery = "";
     let impact = "";
     let lookingAhead = "";
+    let evidenceAttached = "";
 
     // 9c fields
     let courseOutcomes = [];
@@ -118,12 +139,14 @@ export class DocumentParser {
 
         rows.forEach(tr => {
           const cells = tr.querySelectorAll('td, th');
-          if (cells.length >= 2) {
+          
+          // 2-column key-value tables (Section A, B, reflections)
+          if (cells.length === 2) {
             const keyText = cells[0].textContent.trim().toLowerCase();
             const valText = cells[1].textContent.trim();
 
             if (valText && valText.length > 0) {
-              if (keyText.includes("faculty name") || keyText.includes("name of faculty")) {
+              if (keyText.includes("faculty name") || keyText.includes("name of faculty") || keyText.includes("name of the faculty")) {
                 facultyName = valText;
               } else if (keyText.includes("department")) {
                 department = valText;
@@ -151,22 +174,55 @@ export class DocumentParser {
                 impact = valText;
               } else if (keyText.includes("looking ahead") || keyText.includes("challenges")) {
                 lookingAhead = valText;
-              } else if (keyText.includes("what worked well")) {
+              } else if (keyText.includes("what worked well") || keyText.includes("what worked")) {
                 whatWorked = valText;
               } else if (keyText.includes("what could be improved") || keyText.includes("improved")) {
                 whatCouldImprove = valText;
+              } else if (keyText.includes("evidence") || keyText.includes("list of evidence")) {
+                evidenceAttached = valText;
               }
+            }
+          }
+
+          // Course Outcome statements (CO1, CO2, etc.)
+          if (cells.length >= 2) {
+            const firstCol = cells[0].textContent.trim();
+            const secondCol = cells[1].textContent.trim();
+            if (/^CO\s*[1-6]/i.test(firstCol) && secondCol.length > 3) {
+              courseOutcomes.push({
+                code: firstCol.toUpperCase(),
+                text: secondCol
+              });
+            }
+          }
+
+          // Section C multi-column table for 9c assessment components
+          if (cells.length >= 4) {
+            const col0 = cells[0].textContent.trim();
+            if (!col0.toLowerCase().includes("assessment component") && !col0.toLowerCase().includes("s.no") && col0.length > 0) {
+              assessmentComponents.push({
+                name: col0,
+                type: cells[1]?.textContent?.trim() || "Summative",
+                co: cells[2]?.textContent?.trim() || "",
+                announcedDate: cells[3]?.textContent?.trim() || "",
+                preMaterials: cells[3]?.textContent?.trim() || "",
+                completionDate: cells[4]?.textContent?.trim() || "",
+                postMaterials: cells[5]?.textContent?.trim() || "",
+                marks: cells[6]?.textContent?.trim() || "25",
+                maxMarks: parseInt(cells[6]?.textContent?.trim()) || 25,
+                scored: true
+              });
             }
           }
         });
       } catch (err) {
-        console.warn("DOMParser error:", err);
+        console.warn("DOMParser table extraction warning:", err);
       }
     }
 
-    // Fallback: regex search on rawText if not extracted from tables
+    // Fallback regex search on rawText if tables were flat or unformatted
     if (!facultyName) {
-      facultyName = this.extractRegex(rawText, /(?:Faculty Name|Name of Faculty)[:\s\t\n]+([A-Za-z.\s]+?)(?:\r?\n|Department|Programme|$)/i) || "";
+      facultyName = this.extractRegex(rawText, /(?:Faculty Name|Name of the Faculty|Name of Faculty)[:\s\t\n]+([A-Za-z.\s]+?)(?:\r?\n|Department|Programme|$)/i) || "";
     }
     if (!department) {
       department = this.extractRegex(rawText, /(?:Department)[:\s\t\n]+([A-Za-z&\s]+?)(?:\r?\n|Programme|Course|$)/i) || "";
@@ -184,16 +240,34 @@ export class DocumentParser {
     if (!lookingAhead) lookingAhead = this.extractSection(rawText, "Looking Ahead", "List of Evidence") || "";
     if (!whatWorked) whatWorked = this.extractSection(rawText, "What worked well in the assessment process?", "What could be improved") || "";
     if (!whatCouldImprove) whatCouldImprove = this.extractSection(rawText, "What could be improved in future offerings?", "Date of Submission") || "";
+    if (!evidenceAttached) evidenceAttached = this.extractSection(rawText, "List of Evidence Attached", "Signature") || "";
+
+    // Regex check for URLs in rawText
+    if (!evidenceAttached) {
+      const urlMatch = rawText.match(/https?:\/\/[^\s]+/i);
+      if (urlMatch) evidenceAttached = urlMatch[0];
+    }
+
+    // Normalize department to institutional standard
+    let normalizedDept = "General";
+    const deptSearch = `${department} ${rawText.slice(0, 800)}`.toLowerCase();
+    if (deptSearch.includes("computer science")) normalizedDept = "Computer Science";
+    else if (deptSearch.includes("information tech")) normalizedDept = "Information Technology";
+    else if (deptSearch.includes("math")) normalizedDept = "Mathematics";
+    else if (deptSearch.includes("physic")) normalizedDept = "Physics";
+    else if (deptSearch.includes("commerce")) normalizedDept = "Commerce";
+    else if (deptSearch.includes("management") || deptSearch.includes("business admin") || deptSearch.includes("bba") || deptSearch.includes("mba")) normalizedDept = "Management Studies";
+    else if (department && department.length > 2) normalizedDept = department.trim();
 
     return {
       type,
       fileName,
       facultyName: facultyName.trim(),
-      department: department.trim(),
+      department: normalizedDept,
       programme: programme.trim(),
       courseTitle: courseTitle.trim(),
       courseCode: courseCode.trim(),
-      academicYear: academicYear.trim(),
+      academicYear: academicYear.trim() || "2025-26",
       teachingMethod: teachingMethod.trim(),
       pedagogicalApproach: pedagogicalApproach.trim(),
       tools: tools.trim(),
@@ -204,6 +278,8 @@ export class DocumentParser {
       lookingAhead: lookingAhead.trim(),
       whatWorked: whatWorked.trim(),
       whatCouldImprove: whatCouldImprove.trim(),
+      evidenceAttached: evidenceAttached.trim(),
+      evidence: evidenceAttached.trim(),
       courseOutcomes,
       assessmentComponents,
       rawText

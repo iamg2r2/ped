@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PED Analytics | IQAC - St. Joseph's College (Autonomous), Tiruchirappalli</title>
-    <meta name="description" content="Pedagogical and Assessment Practices Evaluation Platform for St. Joseph's College IQAC. Upload and evaluate Annexure 9(b) and 9(c) Word or PDF documents." />
+    <title>PED Evaluation Portal | IQAC - St. Joseph's College (Autonomous), Tiruchirappalli</title>
+    <meta name="description" content="Pedagogy (Annexure 9b) and Assessment (Annexure 9c) Evaluation Portal for the Internal Quality Assurance Cell (IQAC), St. Joseph's College (Autonomous), Tiruchirappalli." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,17 +18,17 @@
           <span class="college-crest">🏛️</span>
           <div>
             <span class="college-name">St. Joseph's College (Autonomous)</span>
-            <span class="college-sub">Tiruchirappalli, Tamil Nadu • Re-accredited by NAAC with A++ Grade</span>
+            <span class="college-sub">Tiruchirappalli, Tamil Nadu • Re-accredited by NAAC with A++ Grade (Cycle 4)</span>
           </div>
         </div>
         <div class="topbar-badge">
           <span class="cell-tag">IQAC Academic Cell</span>
-          <span class="ay-tag">Academic Year 2025-26</span>
+          <span class="ay-tag" id="header-ay-badge">Academic Year 2025-26</span>
         </div>
       </div>
     </div>
 
-    <!-- App Header & Navigation -->
+    <!-- App Header & 4 Primary Navigation Items (User Specification 4) -->
     <header class="app-header">
       <div class="header-container">
         <div class="brand">
@@ -42,33 +42,33 @@
           </div>
           <div>
             <div class="brand-title">PED Evaluation Portal</div>
-            <div class="brand-subtitle">Pedagogy (9b) & Assessment (9c) Report Evaluator</div>
+            <div class="brand-subtitle">IQAC Pedagogical & Assessment Quality Engine</div>
           </div>
         </div>
 
         <nav class="nav-tabs" role="tablist">
-          <button class="nav-tab active" data-tab="upload-tab" id="tab-upload" role="tab" aria-selected="true">
+          <button class="nav-tab active" data-tab="submissions-tab" id="tab-submissions" role="tab" aria-selected="true">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-            Upload & Submit Documents
+            Submissions
           </button>
-          <button class="nav-tab" data-tab="portfolios-tab" id="tab-portfolios" role="tab" aria-selected="false">
+          <button class="nav-tab" data-tab="faculty-reports-tab" id="tab-faculty-reports" role="tab" aria-selected="false">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Faculty Portfolios & Department
+            Faculty Reports
           </button>
-          <button class="nav-tab" data-tab="iqac-tab" id="tab-iqac" role="tab" aria-selected="false">
+          <button class="nav-tab" data-tab="iqac-analytics-tab" id="tab-iqac-analytics" role="tab" aria-selected="false">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-            IQAC Department Summary
+            IQAC Analytics
           </button>
           <button class="nav-tab" data-tab="templates-tab" id="tab-templates" role="tab" aria-selected="false">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Download Word Templates
+            Templates
           </button>
         </nav>
 
         <div class="header-actions">
-          <button id="export-csv-btn" class="btn btn-primary btn-sm" title="Export all evaluated reports as CSV spreadsheet">
+          <button id="export-excel-btn" class="btn btn-primary btn-sm" title="Download consolidated Excel workbook with all sheets">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            Export All to CSV
+            Export Institutional Data
           </button>
         </div>
       </div>
@@ -76,205 +76,383 @@
 
     <!-- Main Container -->
     <main class="app-main">
-      <!-- Simple Metric Ribbon -->
-      <section class="metric-ribbon">
+      <!-- 4 Dashboard Summary Metrics (User Specification 4) -->
+      <section class="metric-ribbon" aria-label="Dashboard Summary Metrics">
         <div class="metric-card">
-          <div class="metric-label">College Average Score</div>
+          <div class="metric-label">Total Faculty Submissions</div>
           <div class="metric-value-row">
-            <span class="metric-value text-emerald" id="stat-college-avg">0.0</span>
-            <span class="metric-badge badge-success" id="stat-quality-band">Exemplary</span>
+            <span class="metric-value text-indigo" id="stat-total-submissions">0</span>
+            <span class="metric-badge badge-indigo" id="stat-submissions-split">0 (9b) • 0 (9c)</span>
           </div>
-          <div class="metric-subtext">Out of 100 benchmark points</div>
+          <div class="metric-subtext">Total evaluated submissions on record</div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-label">Selected Department</div>
+          <div class="metric-label">Submissions Requiring Review</div>
           <div class="metric-value-row">
-            <span class="metric-value" style="font-size: 1.5rem;" id="stat-active-dept">Computer Science</span>
-            <span class="metric-badge badge-indigo" id="stat-dept-count">4 Faculty</span>
+            <span class="metric-value text-rose" id="stat-review-required">0</span>
+            <span class="metric-badge badge-warning" id="stat-review-badge">Provisional</span>
           </div>
-          <div class="metric-subtext">Active department filter</div>
+          <div class="metric-subtext">Incomplete content or missing evidence</div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-label">Annexure 9(b) Pedagogy Reports</div>
+          <div class="metric-label">Evidence Compliance Rate</div>
           <div class="metric-value-row">
-            <span class="metric-value text-indigo" id="stat-count-9b">0</span>
-            <span class="metric-badge badge-indigo" id="stat-avg-9b">Avg: 0.0</span>
+            <span class="metric-value text-emerald" id="stat-evidence-compliance">0%</span>
+            <span class="metric-badge badge-success" id="stat-evidence-count">0 Verified</span>
           </div>
-          <div class="metric-subtext">Pedagogical practices submitted</div>
+          <div class="metric-subtext">Percentage with verifiable attached artifacts</div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-label">Annexure 9(c) Assessment Reports</div>
+          <div class="metric-label">Departments Represented</div>
           <div class="metric-value-row">
-            <span class="metric-value text-cyan" id="stat-count-9c">0</span>
-            <span class="metric-badge badge-cyan" id="stat-avg-9c">Avg: 0.0</span>
+            <span class="metric-value text-cyan" id="stat-depts-represented">6</span>
+            <span class="metric-badge badge-cyan" id="stat-active-dept-name">All Active</span>
           </div>
-          <div class="metric-subtext">Assessment reflections submitted</div>
+          <div class="metric-subtext">Academic disciplines participating in audit</div>
         </div>
       </section>
 
-      <!-- TAB 1: Upload & Submit Reports (Clean & Direct) -->
-      <section id="upload-tab" class="tab-pane active" role="tabpanel">
+      <!-- Data Origin Notice (Distinguishing Demo Records from Real Submissions) -->
+      <div id="demo-data-notice" class="notice-banner mb-4" style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.25rem; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: var(--radius-md); font-size: 0.825rem; color: #9d174d;">
+        <div>
+          <strong>Institutional Dataset Active:</strong> Contains initial calibration records. Any new Word or PDF documents uploaded below will be evaluated in real-time according to strict IQAC scoring rubrics.
+        </div>
+        <button id="clear-custom-submissions-btn" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+          Reset to Calibration Baseline
+        </button>
+      </div>
+
+      <!-- TAB 1: Submissions — Upload and Evaluate Faculty Documents (User Specification 4) -->
+      <section id="submissions-tab" class="tab-pane active" role="tabpanel">
         <div class="section-header">
           <div>
-            <h1 class="section-title">Upload & Submit Faculty Documents</h1>
-            <p class="section-desc">Attach your completed Microsoft Word (<code>.docx</code>) or PDF (<code>.pdf</code>) document. The system reads your document, displays your name and department for confirmation, and evaluates your report.</p>
+            <h1 class="section-title">Faculty Submissions & Document Evaluation</h1>
+            <p class="section-desc">Upload Annexure 9(b) (Pedagogy) or Annexure 9(c) (Assessment) Word (.docx) or PDF (.pdf) documents. The engine strictly awards credit only for verified, extracted content with zero default inflation.</p>
           </div>
         </div>
 
         <div class="card p-4">
-          <!-- Dropzone -->
-          <div class="dropzone" id="file-dropzone">
-            <input type="file" id="file-input" accept=".docx,.doc,.pdf,.json,.csv" class="file-input-hidden" />
+          <!-- Bulk Drag-and-Drop Dropzone -->
+          <div class="dropzone" id="file-dropzone" style="cursor: pointer;">
+            <input type="file" id="file-input-multiple" multiple accept=".docx,.doc,.pdf" class="file-input-hidden" />
+            <input type="file" id="folder-input" webkitdirectory directory multiple class="file-input-hidden" />
             <div class="dropzone-icon">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>
               </svg>
             </div>
-            <span class="dropzone-title">Click to browse or drop your Word (.docx) or PDF document here</span>
-            <span class="dropzone-hint">Supports Annexure 9(b) (Pedagogy) or Annexure 9(c) (Assessment Component)</span>
-            <div id="file-chosen-pill" class="file-preview-pill" style="display: none;">
-              📄 <span id="file-chosen-name">No file selected</span>
+            <span class="dropzone-title" style="font-size: 1.15rem; font-weight: 700;">
+              Drag & Drop Multiple Files or Entire Folders Here (Up to 600+ Documents)
+            </span>
+            <span class="dropzone-hint" style="font-size: 0.85rem; color: var(--text-muted); max-width: 600px; margin: 0.25rem auto;">
+              The engine automatically parses tables and text inside every Word (<code>.docx</code>) and PDF (<code>.pdf</code>) document in the background. No manual form typing required.
+            </span>
+
+            <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-browse-files">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                Select Files (Multiple)
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-folder">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                Select Entire Folder
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="load-test-sample-btn" style="background: white;">
+                ⚡ Test Sample Batch (Empty, Partial & Complete Docs)
+              </button>
             </div>
           </div>
 
-          <!-- Submission Details Form -->
-          <form id="submission-confirm-form" class="evaluation-form mt-4">
-            <div style="background: var(--bg-subtle); padding: 1rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-card); margin-bottom: 0.5rem;">
-              <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">
-                Faculty & Course Confirmation
-              </h3>
-              <p style="font-size: 0.8rem; color: var(--text-muted);">
-                Verify your name and details below before submitting. These are pre-filled from your document or can be entered directly.
-              </p>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="input-faculty-name">Faculty Name *</label>
-                <input type="text" id="input-faculty-name" required placeholder="e.g. Dr. Riya Sharma" class="form-input" />
+          <!-- Live Automatic Background Batch Processing Status (Visible during & after batch upload) -->
+          <div id="batch-progress-card" class="card mt-4 p-4 hidden" style="background: var(--pastel-sky); border-color: var(--pastel-sky-border);">
+            <div class="flex-between flex-wrap gap-2 mb-2">
+              <div>
+                <h3 style="font-size: 1rem; font-weight: 800; color: var(--pastel-sky-text); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="spinner" id="batch-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+                  <span id="batch-status-title">Processing Documents in Background...</span>
+                </h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0;" id="batch-current-file-text">
+                  Analyzing document contents...
+                </p>
               </div>
-
-              <div class="form-group">
-                <label for="input-department">Select Department *</label>
-                <select id="input-department" class="form-input" required>
-                  <option value="Computer Science">Computer Science</option>
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Physics">Physics</option>
-                  <option value="Commerce">Commerce</option>
-                  <option value="Management Studies">Management Studies</option>
-                </select>
+              <div class="text-right">
+                <span style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);" id="batch-count-display">0 / 0</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="batch-percentage-display">0% Completed</div>
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="input-course-title">Course Title & Code *</label>
-                <input type="text" id="input-course-title" required placeholder="e.g. 23PCS301 Advanced Algorithms" class="form-input" />
+            <!-- Progress Bar -->
+            <div style="height: 8px; width: 100%; background: white; border-radius: 999px; overflow: hidden; border: 1px solid var(--border-card); margin-bottom: 0.75rem;">
+              <div id="batch-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #22c55e); transition: width 0.15s ease;"></div>
+            </div>
+
+            <!-- Real-time Summary Counters -->
+            <div class="grid grid-4 gap-2 text-center" style="font-size: 0.8rem;">
+              <div class="p-2" style="background: white; border-radius: var(--radius-sm); border: 1px solid var(--border-card);">
+                <div style="color: var(--text-muted); font-size: 0.7rem;">Verified Complete</div>
+                <strong style="color: #166534; font-size: 1rem;" id="batch-stat-verified">0</strong>
               </div>
-
-              <div class="form-group">
-                <label for="input-annexure-type">Annexure Type *</label>
-                <select id="input-annexure-type" class="form-input" required>
-                  <option value="9B">Annexure 9(b) - Reflection on Pedagogical Practices</option>
-                  <option value="9C">Annexure 9(c) - Reflection on Assessment Components</option>
-                </select>
+              <div class="p-2" style="background: white; border-radius: var(--radius-sm); border: 1px solid var(--border-card);">
+                <div style="color: var(--text-muted); font-size: 0.7rem;">Review Required</div>
+                <strong style="color: #ea580c; font-size: 1rem;" id="batch-stat-provisional">0</strong>
+              </div>
+              <div class="p-2" style="background: white; border-radius: var(--radius-sm); border: 1px solid var(--border-card);">
+                <div style="color: var(--text-muted); font-size: 0.7rem;">Incomplete / Zero Score</div>
+                <strong style="color: #e11d48; font-size: 1rem;" id="batch-stat-incomplete">0</strong>
+              </div>
+              <div class="p-2" style="background: white; border-radius: var(--radius-sm); border: 1px solid var(--border-card);">
+                <div style="color: var(--text-muted); font-size: 0.7rem;">Extraction Failures</div>
+                <strong style="color: #64748b; font-size: 1rem;" id="batch-stat-failed">0</strong>
               </div>
             </div>
-
-            <div class="form-group">
-              <label for="input-method">Teaching / Assessment Method (from document)</label>
-              <input type="text" id="input-method" placeholder="e.g. Flipped Classroom & Timed Peer Sprints" class="form-input" />
-            </div>
-
-            <div class="form-group">
-              <label for="input-reflection">Document Content / Reflection Summary</label>
-              <textarea id="input-reflection" rows="3" class="form-input" placeholder="Brief outline of in-class delivery, student engagement, and reflections..."></textarea>
-            </div>
-
-            <div class="flex-between mt-2">
-              <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 0.95rem;">
-                Submit & Evaluate Document
-              </button>
-              <button type="button" id="load-test-sample-btn" class="btn btn-secondary btn-sm">
-                Test with Sample Document
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
 
-        <!-- Evaluation Results Banner -->
+        <!-- Latest Evaluation Focus Box -->
         <div id="upload-evaluation-result" class="evaluation-result-box hidden mt-4">
-          <!-- Populated after upload/evaluation -->
+          <!-- Populated dynamically upon document evaluation -->
+        </div>
+
+        <!-- Submissions Registry Table -->
+        <div class="card mt-4">
+          <div class="card-header flex-between flex-wrap gap-2">
+            <div>
+              <h3 class="card-title">Recent Submissions Registry</h3>
+              <p class="card-subtitle">Complete log of evaluated faculty documents with traceable rationale</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <input type="text" id="search-submissions-input" placeholder="Search faculty, course, filename..." class="form-input" style="width: 220px; font-size: 0.8rem; padding: 0.35rem 0.65rem;" />
+              <select id="filter-submissions-status" class="select-control select-sm">
+                <option value="ALL">All Statuses</option>
+                <option value="Verified">Verified</option>
+                <option value="Provisional — Review Required">Provisional / Review Required</option>
+                <option value="Incomplete — Not Evaluable">Incomplete (Zero Score)</option>
+                <option value="Extraction Failed — Review Required">Extraction Failed</option>
+              </select>
+              <select id="filter-submissions-dept" class="select-control select-sm">
+                <option value="ALL">All Departments</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Management Studies">Management Studies</option>
+              </select>
+              <button id="download-submissions-csv-btn" class="btn btn-secondary btn-sm">
+                Export Submissions (CSV)
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="submissions-registry-table">
+              <thead>
+                <tr>
+                  <th>Submission Date</th>
+                  <th>Faculty Name</th>
+                  <th>Department</th>
+                  <th>Annexure</th>
+                  <th>Completeness</th>
+                  <th>Evidence Status</th>
+                  <th>Quality Score</th>
+                  <th>Evaluation Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="submissions-registry-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <!-- TAB 2: Faculty Portfolios with Department Dropdown -->
-      <section id="portfolios-tab" class="tab-pane" role="tabpanel">
-        <div class="section-header flex-between">
+      <!-- TAB 2: Faculty Reports — View and Export Individual Reports (User Specification 4 & 6) -->
+      <section id="faculty-reports-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header flex-between flex-wrap gap-3">
           <div>
-            <h2 class="section-title">Faculty Portfolios by Department</h2>
-            <p class="section-desc">Select an academic department from the dropdown to review faculty submissions and individual scorecards.</p>
+            <h1 class="section-title">Faculty Reports & Feedback</h1>
+            <p class="section-desc">Select an academic department and faculty member to review individual feedback reports containing deficiencies identified, specific improvements, and next-cycle recommendations.</p>
           </div>
-          <!-- Prominent Department Dropdown -->
-          <div class="filter-group">
-            <label for="dept-select-main" class="filter-label" style="font-weight: 700; color: var(--text-main);">
-              Select Department:
-            </label>
-            <select id="dept-select-main" class="select-control select-lg">
-              <!-- Populated dynamically -->
-            </select>
+          <!-- Action Buttons -->
+          <div class="d-flex gap-2">
+            <button id="print-dossier-btn" class="btn btn-primary btn-sm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print / Save Faculty Report (PDF)
+            </button>
+            <button id="export-faculty-csv-btn" class="btn btn-secondary btn-sm">
+              Export Report (CSV)
+            </button>
           </div>
         </div>
 
-        <!-- Faculty Selector Ribbon -->
+        <!-- Department and Faculty Selectors Ribbon -->
         <div class="card p-3 mb-4" style="background: var(--pastel-sky); border-color: var(--pastel-sky-border);">
           <div class="flex-between flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-2">
-              <label for="faculty-select" class="filter-label" style="font-weight: 700; color: var(--pastel-sky-text);">
-                Select Faculty Member:
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <label for="dept-select-main" class="filter-label" style="font-weight: 700; color: var(--pastel-sky-text);">
+                Department:
               </label>
-              <select id="faculty-select" class="select-control select-lg" style="background: white;">
+              <select id="dept-select-main" class="select-control select-lg" style="background: white;">
                 <!-- Populated dynamically -->
               </select>
             </div>
-            <div>
-              <button id="print-dossier-btn" class="btn btn-secondary btn-sm">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-                Print / Save Appraisal Dossier
-              </button>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <label for="faculty-select" class="filter-label" style="font-weight: 700; color: var(--pastel-sky-text);">
+                Select Faculty Member:
+              </label>
+              <select id="faculty-select" class="select-control select-lg" style="background: white; min-width: 250px;">
+                <!-- Populated dynamically -->
+              </select>
             </div>
           </div>
         </div>
 
-        <!-- Faculty Dossier Container -->
+        <!-- Faculty Individual Report Container -->
         <div id="faculty-detail-container">
-          <!-- Populated dynamically -->
+          <!-- Populated dynamically with the 3 mandatory sections and rubric scorecard -->
         </div>
       </section>
 
-      <!-- TAB 3: IQAC Department Summary (Clean, Basic, No complex graphs) -->
-      <section id="iqac-tab" class="tab-pane" role="tabpanel">
-        <div class="section-header">
+      <!-- TAB 3: IQAC Analytics — Institutional and Department-Level Analysis (User Specification 4 & 5) -->
+      <section id="iqac-analytics-tab" class="tab-pane" role="tabpanel">
+        <div class="section-header flex-between flex-wrap gap-3">
           <div>
-            <h2 class="section-title">IQAC Institutional Department Summary</h2>
-            <p class="section-desc">Basic academic quality metrics across departments for St. Joseph's College (Autonomous).</p>
+            <h1 class="section-title">IQAC Institutional & Department Analytics</h1>
+            <p class="section-desc">Evidence-based institutional analysis calculated directly from actual faculty submissions across departments, pedagogies, and assessments.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button id="print-institutional-btn" class="btn btn-primary btn-sm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print Institutional Report (PDF)
+            </button>
+            <button id="export-summary-table-btn" class="btn btn-secondary btn-sm">
+              Download Department Summary (CSV)
+            </button>
           </div>
         </div>
 
-        <!-- Simple Department Overview Table -->
-        <div class="card">
+        <!-- Filter Bar (User Specification 4) -->
+        <div class="card p-3 mb-4" style="background: var(--bg-subtle);">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">Auditing Filters:</span>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <select id="analytics-filter-ay" class="select-control select-sm">
+                <option value="ALL">Academic Year: 2025-26</option>
+              </select>
+              <select id="analytics-filter-sem" class="select-control select-sm">
+                <option value="ALL">All Semesters</option>
+                <option value="ODD">Odd Semester</option>
+                <option value="EVEN">Even Semester</option>
+              </select>
+              <select id="analytics-filter-dept" class="select-control select-sm">
+                <option value="ALL">All Departments</option>
+                <!-- Populated dynamically -->
+              </select>
+              <select id="analytics-filter-prog" class="select-control select-sm">
+                <option value="ALL">All Programmes</option>
+                <option value="PG">Postgraduate (PG)</option>
+                <option value="UG">Undergraduate (UG)</option>
+              </select>
+              <select id="analytics-filter-annexure" class="select-control select-sm">
+                <option value="ALL">All Annexures</option>
+                <option value="9B">Annexure 9(b) Pedagogy</option>
+                <option value="9C">Annexure 9(c) Assessment</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Method Highlights Ribbon (Most / Least Reported) -->
+        <div class="grid grid-4 mb-4" id="analytics-highlights-grid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Department-Wise Pedagogy & Assessment Analytics (User Specification 5) -->
+        <div class="grid grid-2 mb-4">
+          <!-- Pedagogy Usage -->
+          <div class="card p-4">
+            <div class="flex-between mb-3">
+              <div>
+                <h3 class="card-title">Department-Wise Pedagogy Usage</h3>
+                <p class="card-subtitle">Standardized taxonomy adoption (Uses vs Distinct Faculty Adopters)</p>
+              </div>
+              <span class="badge badge-indigo">Annexure 9(b)</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table" id="pedagogy-analytics-table">
+                <thead>
+                  <tr>
+                    <th>Pedagogical Strategy</th>
+                    <th>Documented Uses</th>
+                    <th>Faculty Adopters</th>
+                    <th>Adoption Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="pedagogy-analytics-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Assessment Method Usage -->
+          <div class="card p-4">
+            <div class="flex-between mb-3">
+              <div>
+                <h3 class="card-title">Department-Wise Assessment Usage</h3>
+                <p class="card-subtitle">Standardized CIE methods (Summative, Formative, Alternative)</p>
+              </div>
+              <span class="badge badge-success">Annexure 9(c)</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table" id="assessment-analytics-table">
+                <thead>
+                  <tr>
+                    <th>Assessment Method</th>
+                    <th>Documented Uses</th>
+                    <th>Faculty Adopters</th>
+                    <th>Adoption Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="assessment-analytics-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Institutional Quality & Compliance Summary -->
+        <div class="grid grid-2 mb-4">
+          <!-- CO Mapping Patterns & Evidence Compliance -->
+          <div class="card p-4">
+            <h3 class="card-title mb-2">Outcome Mapping & Evidence Verification</h3>
+            <p class="card-subtitle mb-3">Audit metrics for accreditation compliance (NAAC 2.3 & 2.5)</p>
+            <div id="compliance-stats-container">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Common Deficiencies & Development Recommendations -->
+          <div class="card p-4">
+            <h3 class="card-title mb-2">Institutional Quality Deficiencies</h3>
+            <p class="card-subtitle mb-3">Common documentation gaps & recommended faculty development</p>
+            <div id="institutional-recommendations-container">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Departmental Quality Audit Registry Table -->
+        <div class="card mb-4">
           <div class="card-header flex-between">
             <div>
               <h3 class="card-title">Departmental Quality Audit Summary</h3>
-              <p class="card-subtitle">Aggregated Annexure 9(b) and 9(c) performance metrics</p>
+              <p class="card-subtitle">Comparative assessment calculated from actual submission records</p>
             </div>
-            <button id="export-summary-table-btn" class="btn btn-secondary btn-sm">
-              Download Table (CSV)
-            </button>
           </div>
 
           <div class="table-responsive">
@@ -283,12 +461,13 @@
                 <tr>
                   <th>Department</th>
                   <th>HOD</th>
-                  <th>Faculty Count</th>
-                  <th>Annexure 9(b) Pedagogy Avg</th>
-                  <th>Annexure 9(c) Assessment Avg</th>
+                  <th>Total Faculty</th>
+                  <th>Submissions</th>
+                  <th>Pedagogy Avg (9b)</th>
+                  <th>Assessment Avg (9c)</th>
                   <th>Overall Quality Score</th>
+                  <th>Evidence Compliance</th>
                   <th>Status</th>
-                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="departments-summary-tbody">
@@ -297,41 +476,14 @@
             </table>
           </div>
         </div>
-
-        <!-- Faculty Audit Registry Table -->
-        <div class="card mt-4">
-          <div class="card-header">
-            <h3 class="card-title">All Faculty Submissions Registry</h3>
-            <p class="card-subtitle">Complete institutional record of evaluated faculty submissions</p>
-          </div>
-
-          <div class="table-responsive">
-            <table class="data-table" id="all-faculty-registry-table">
-              <thead>
-                <tr>
-                  <th>Faculty Name</th>
-                  <th>Department</th>
-                  <th>Course Title</th>
-                  <th>Annexure 9(b) Score</th>
-                  <th>Annexure 9(c) Score</th>
-                  <th>Composite Score</th>
-                  <th>Status Band</th>
-                </tr>
-              </thead>
-              <tbody id="all-faculty-registry-tbody">
-                <!-- Populated dynamically -->
-              </tbody>
-            </table>
-          </div>
-        </div>
       </section>
 
-      <!-- TAB 4: Download Word Templates -->
+      <!-- TAB 4: Templates — Download Word Templates (User Specification 4) -->
       <section id="templates-tab" class="tab-pane" role="tabpanel">
         <div class="section-header">
           <div>
-            <h2 class="section-title">Official St. Joseph's College Microsoft Word Templates</h2>
-            <p class="section-desc">Download the official <code>.docx</code> templates to fill out in Microsoft Word and upload back into this platform.</p>
+            <h1 class="section-title">Official St. Joseph's College Microsoft Word Templates</h1>
+            <p class="section-desc">Download the official Microsoft Word (<code>.docx</code>) templates. Complete all required sections in Word and upload them directly to the Submissions tab for evaluation.</p>
           </div>
         </div>
 
@@ -344,11 +496,11 @@
               </div>
               <h3 class="card-title">Annexure 9(b) Template (.docx)</h3>
               <p class="card-subtitle"><strong>Faculty Reflection on Pedagogical Practices</strong></p>
-              <ul class="template-features">
+              <ul class="template-features mt-3">
                 <li>Section A: Course & Faculty Details table</li>
                 <li>Section B: Teaching Method & Tools table</li>
                 <li>Reflections on Planning, In-Class Delivery, and Impact</li>
-                <li>Section D: Evidence attachments list</li>
+                <li>Section D: Evidence attachments list & verification</li>
               </ul>
             </div>
             <a href="/templates/Annexure_9_b_Template_Pedagogy_Approach.docx" download="Annexure_9_b_Template_Pedagogy_Approach.docx" class="btn btn-primary mt-4">
@@ -364,10 +516,10 @@
               </div>
               <h3 class="card-title">Annexure 9(c) Template (.docx)</h3>
               <p class="card-subtitle"><strong>Faculty Reflection on Assessment Components</strong></p>
-              <ul class="template-features">
+              <ul class="template-features mt-3">
                 <li>Section A: Course Details</li>
                 <li>Section B: Approved Course Outcomes (CO1 to CO5)</li>
-                <li>Section C: Assessment Components matrix</li>
+                <li>Section C: Assessment Components matrix with pre/post materials</li>
                 <li>Section E: Faculty reflections on assessment process</li>
               </ul>
             </div>
@@ -385,7 +537,7 @@
       <div class="modal-dialog">
         <div class="modal-header">
           <div>
-            <h3 class="modal-title">Official Faculty Pedagogical Appraisal Dossier</h3>
+            <h3 class="modal-title">Official Faculty Appraisal Dossier</h3>
             <span class="modal-subtitle">Internal Quality Assurance Cell (IQAC) • St. Joseph's College (Autonomous)</span>
           </div>
           <div class="modal-actions">
