@@ -14,8 +14,12 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "jszip": "^3.10.2",
     "lucide": "^1.55.0",
     "mammoth": "^1.13.0",
-    "pdfjs-dist": "^6.4.299"
+    "pdfjs-dist": "^6.4.299",
+    "xlsx": "^0.18.5"
   }
 }

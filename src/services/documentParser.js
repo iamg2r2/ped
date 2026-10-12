@@ -6,6 +6,7 @@
  */
 
 import mammoth from 'mammoth';
+import { EvidenceVerifier } from './evidenceVerifier.js';
 
 export class DocumentParser {
   /**
@@ -37,7 +38,7 @@ export class DocumentParser {
   }
 
   /**
-   * Parse Word (.docx) document
+   * Parse Word (.docx) document and verify embedded visual evidence
    */
   static async parseDocx(file) {
     try {
@@ -48,7 +49,13 @@ export class DocumentParser {
       const html = htmlResult.value || "";
       const rawText = textResult.value || "";
 
-      return this.extractFromHtmlAndText(html, rawText, file.name);
+      const extracted = this.extractFromHtmlAndText(html, rawText, file.name);
+      
+      // Perform automated visual evidence and geotag audit
+      const evidenceAudit = await EvidenceVerifier.auditEvidence(arrayBuffer, rawText, extracted.courseTitle);
+      extracted.evidenceAudit = evidenceAudit;
+      
+      return extracted;
     } catch (err) {
       console.error("Docx parsing failed:", err);
       return {
@@ -83,7 +90,11 @@ export class DocumentParser {
         text += pageText + "\n";
       }
 
-      return this.extractFromHtmlAndText("", text, file.name);
+      const extracted = this.extractFromHtmlAndText("", text, file.name);
+      const evidenceAudit = await EvidenceVerifier.auditEvidence(arrayBuffer, text, extracted.courseTitle);
+      extracted.evidenceAudit = evidenceAudit;
+
+      return extracted;
     } catch (e) {
       console.warn("PDF parse fallback/failure:", e);
       return {

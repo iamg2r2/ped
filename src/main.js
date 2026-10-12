@@ -15,6 +15,10 @@
 import { DEPARTMENTS_DATA, INITIAL_FACULTY_RECORDS, COLLEGE_INFO } from './data/initialData.js';
 import { EvaluatorEngine } from './services/evaluator.js';
 import { DocumentParser } from './services/documentParser.js';
+import { EvidenceVerifier } from './services/evidenceVerifier.js';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   RUBRIC_9B_CONFIG, 
   RUBRIC_9C_CONFIG, 
@@ -237,11 +241,24 @@ class PedApp {
     });
 
     // Print & PDF Export Handlers
+    document.getElementById("download-faculty-pdf-btn")?.addEventListener("click", () => {
+      this.downloadFacultyPdf();
+    });
+    document.getElementById("download-institutional-pdf-btn")?.addEventListener("click", () => {
+      this.downloadInstitutionalPdf();
+    });
     document.getElementById("print-dossier-btn")?.addEventListener("click", () => {
       this.openPrintModal("faculty");
     });
     document.getElementById("print-institutional-btn")?.addEventListener("click", () => {
       this.openPrintModal("institutional");
+    });
+    document.getElementById("modal-download-pdf-btn")?.addEventListener("click", () => {
+      if (this.currentModalMode === "institutional") {
+        this.downloadInstitutionalPdf();
+      } else {
+        this.downloadFacultyPdf();
+      }
     });
     document.getElementById("modal-print-btn")?.addEventListener("click", () => {
       window.print();
@@ -552,7 +569,7 @@ class PedApp {
    * 5. Exemplary complete submission (Verified, 94 pts)
    */
   async runSampleBatchTest() {
-    this.showToast("Generating 5 diverse test documents to simulate bulk verification...", "info");
+    this.showToast("Generating 6 diverse test documents (including Geotagged Photo Verification)...", "info");
 
     const sampleSubmissions = [
       {
@@ -577,7 +594,7 @@ class PedApp {
         isCorrupted: true
       },
       {
-        fileName: "Sample_03_Generic_Boilerplate.docx",
+        fileName: "Sample_03_Generic_Photo_No_GPS.docx",
         type: "ANNEXURE_9B",
         facultyName: "Dr. Standard Lecturer",
         department: "Commerce",
@@ -588,7 +605,15 @@ class PedApp {
         coAlignment: "General topic covered in regular session",
         impact: "Students understood the topics well and all went well",
         lookingAhead: "Normal lecture planned for future classes",
-        evidenceAttached: "None"
+        evidenceAttached: "Classroom photo attached without GPS metadata",
+        evidenceAudit: {
+          status: "Human Review Required",
+          score: 6,
+          imagesCount: 1,
+          isGeotagConfirmed: false,
+          rationale: "1 photo attached in document, but embedded EXIF GPS tags are absent or were stripped during compression. Manual review required.",
+          recommendation: "Use GPS Map Camera to ensure coordinate timestamps are visible."
+        }
       },
       {
         fileName: "Sample_04_Detailed_No_Evidence.docx",
@@ -603,10 +628,48 @@ class PedApp {
         coAlignment: "CO2, CO3: Apply boundary conditions to wave equations",
         impact: "Pre-quiz 42% accuracy, post-sprint lab tasks achieved 88% first-pass pass rate",
         lookingAhead: "Strong engagement in peer debates. Next offering will include matrix tutorials",
-        evidenceAttached: "None"
+        evidenceAttached: "None",
+        evidenceAudit: {
+          status: "Missing",
+          score: 0,
+          imagesCount: 0,
+          isGeotagConfirmed: false,
+          rationale: "No embedded photos or verifiable links attached.",
+          recommendation: "Attach geotagged photos to satisfy Section D compliance."
+        }
       },
       {
-        fileName: "Sample_05_Exemplar_Assessment.docx",
+        fileName: "Sample_05_Geotagged_Photo_Evidence.docx",
+        type: "ANNEXURE_9B",
+        facultyName: "Dr. K. Anand (Geotagged Evidence)",
+        department: "Information Technology",
+        courseTitle: "Cloud Security & Threat Modeling",
+        teachingMethod: "Virtual Security Sandbox & Hands-On Threat Modeling",
+        pedagogicalApproach: "Problem-Based Collaborative Learning",
+        planningPurpose: "Designed session around MITRE ATT&CK matrix to teach real-time intrusion response",
+        inClassDelivery: "Students worked in 3-member red/blue teams executing packet captures on Kali Linux VMs",
+        coAlignment: "CO1, CO3: Implement public-key cryptosystems and intrusion detection rules",
+        impact: "100% of teams correctly mitigated simulated DNS spoofing attacks within allotted time",
+        lookingAhead: "Introduce live cloud container honeypots in the next laboratory session",
+        evidenceAttached: "2 Geotagged classroom photos attached: Lat 10.8291° N, Long 78.6883° E (GPS Map Camera, St. Joseph's College campus)",
+        evidenceAudit: {
+          status: "Verified",
+          score: 10,
+          imagesCount: 2,
+          isGeotagConfirmed: true,
+          geotagDetails: {
+            latitude: 10.8291,
+            longitude: 78.6883,
+            isCampus: true,
+            locationLabel: "St. Joseph's College Campus, Tiruchirappalli",
+            timestamp: "2026-09-20"
+          },
+          rationale: "Verified campus geotagged photos attached (10.8291°N, 78.6883°E). Coordinates match St. Joseph's College campus.",
+          recommendation: "Continue maintaining visual archives for NAAC Criterion 2.3.1."
+        }
+      },
+      {
+        fileName: "Sample_06_Exemplar_Assessment.docx",
         type: "ANNEXURE_9C",
         facultyName: "Dr. A. Francis (Exemplar CIE)",
         department: "Computer Science",
@@ -634,15 +697,16 @@ class PedApp {
     const currentFileText = document.getElementById("batch-current-file-text");
 
     if (progressCard) progressCard.classList.remove("hidden");
-    if (statusTitle) statusTitle.textContent = "Processing Sample Batch (5 Documents)...";
+    if (statusTitle) statusTitle.textContent = "Processing Sample Batch (6 Documents)...";
 
-    for (let i = 0; i < sampleSubmissions.length; i++) {
+    const totalSamples = sampleSubmissions.length;
+    for (let i = 0; i < totalSamples; i++) {
       const item = sampleSubmissions[i];
-      if (progressFill) progressFill.style.width = `${((i + 1) / 5) * 100}%`;
-      if (countDisplay) countDisplay.textContent = `${i + 1} / 5`;
+      if (progressFill) progressFill.style.width = `${((i + 1) / totalSamples) * 100}%`;
+      if (countDisplay) countDisplay.textContent = `${i + 1} / ${totalSamples}`;
       if (currentFileText) currentFileText.textContent = `Analyzing: ${item.fileName}...`;
 
-      await new Promise(resolve => setTimeout(resolve, 250));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       let evaluation;
       if (item.extractionFailed) {
@@ -711,9 +775,26 @@ class PedApp {
         ? "badge-success" 
         : (sub.evaluationStatus === "Incomplete — Not Evaluable" ? "badge-danger" : "badge-warning");
 
-      const evidenceBadge = sub.evidenceStatus === "Verified" 
-        ? "badge-success" 
-        : (sub.evidenceStatus === "Missing" ? "badge-danger" : "badge-warning");
+      const ev = sub.evaluationData || {};
+      const isGeotagConfirmed = Boolean(ev.isGeotagConfirmed);
+      const imagesCount = ev.imagesCount || 0;
+      const geotagCoords = ev.geotagDetails?.latitude 
+        ? `${ev.geotagDetails.latitude.toFixed(4)}°N, ${ev.geotagDetails.longitude.toFixed(4)}°E` 
+        : null;
+
+      let evidenceLabel = sub.evidenceStatus;
+      let evidenceBadgeClass = sub.evidenceStatus === "Verified" ? "badge-success" : (sub.evidenceStatus === "Missing" ? "badge-danger" : "badge-warning");
+
+      if (isGeotagConfirmed) {
+        evidenceLabel = `📍 GPS Geotagged`;
+        evidenceBadgeClass = "badge-success";
+      } else if (imagesCount > 0) {
+        evidenceLabel = `📸 Photos (${imagesCount}) • GPS Unverified`;
+        evidenceBadgeClass = "badge-warning";
+      } else if (sub.evidenceStatus === "Missing") {
+        evidenceLabel = "Missing Evidence";
+        evidenceBadgeClass = "badge-danger";
+      }
 
       return `
         <tr>
@@ -725,7 +806,12 @@ class PedApp {
           <td>${sub.department}</td>
           <td><span class="badge ${sub.annexure.includes('9(b)') ? 'badge-indigo' : 'badge-success'}">${sub.annexure}</span></td>
           <td>${sub.completeness}%</td>
-          <td><span class="status-badge ${evidenceBadge}">${sub.evidenceStatus}</span></td>
+          <td>
+            <span class="status-badge ${evidenceBadgeClass}" title="${geotagCoords ? `GPS Coordinates: ${geotagCoords}` : sub.evidenceStatus}">
+              ${evidenceLabel}
+            </span>
+            ${geotagCoords ? `<div style="font-size: 0.675rem; color: #15803d; font-family: monospace; font-weight: 600; margin-top: 2px;">📍 ${geotagCoords}</div>` : ''}
+          </td>
           <td>
             <strong style="color: ${sub.qualityScore === 0 ? '#e11d48' : '#4338ca'}; font-size: 0.95rem;">
               ${sub.qualityScore}
@@ -846,6 +932,31 @@ class PedApp {
               <span class="metric-value" style="font-size: 1.6rem;">${ev.overallDocumentationQuality}/100</span>
             </div>
             <div class="metric-subtext">Composite documentation index</div>
+          </div>
+        </div>
+
+        <!-- Geotag & Visual Evidence Audit (NAAC Criterion 2.3.1) -->
+        <div class="mb-4 p-3" style="background: ${ev.isGeotagConfirmed ? '#f0fdf4' : (ev.imagesCount > 0 ? '#fffbeb' : '#f8fafc')}; border: 1px solid ${ev.isGeotagConfirmed ? '#bbf7d0' : (ev.imagesCount > 0 ? '#fde68a' : '#e2e8f0')}; border-radius: var(--radius-md);">
+          <div class="flex-between flex-wrap gap-2">
+            <div>
+              <h4 style="font-size: 0.9rem; font-weight: 700; color: ${ev.isGeotagConfirmed ? '#166534' : (ev.imagesCount > 0 ? '#92400e' : '#334155')}; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+                <span>${ev.isGeotagConfirmed ? '📍' : (ev.imagesCount > 0 ? '📸' : '📎')}</span>
+                Visual Evidence & Geotag Verification Result (NAAC 2.3.1)
+              </h4>
+              <p style="font-size: 0.8rem; color: #475569; margin: 0.25rem 0 0;">
+                ${ev.criteriaResults?.find(c => c.criterionId.includes("evidence") || c.criterionId.includes("Evidence"))?.reason || (ev.isGeotagConfirmed ? "Geotagged photos verified" : "No visual artifacts attached")}
+              </p>
+            </div>
+            <div class="text-right">
+              <span class="status-badge ${ev.isGeotagConfirmed ? 'badge-success' : (ev.imagesCount > 0 ? 'badge-warning' : 'badge-danger')}">
+                ${ev.isGeotagConfirmed ? 'Verified (GPS Geotag)' : (ev.imagesCount > 0 ? `Photos (${ev.imagesCount}) • GPS Unverified` : ev.evidenceStatus)}
+              </span>
+              ${ev.geotagDetails?.latitude ? `
+                <div style="font-size: 0.725rem; font-family: monospace; color: #166534; font-weight: 600; margin-top: 0.25rem;">
+                  Coords: ${ev.geotagDetails.latitude.toFixed(4)}°N, ${ev.geotagDetails.longitude.toFixed(4)}°E (${ev.geotagDetails.isCampus ? "St. Joseph's Campus Match" : "Off-Campus"})
+                </div>
+              ` : ''}
+            </div>
           </div>
         </div>
 
@@ -1053,6 +1164,31 @@ class PedApp {
                 <div><strong>Pedagogies Mapped:</strong> ${(b.standardizedPedagogies || []).join(", ") || "Lecture"}</div>
               </div>
 
+              <!-- Photographic Evidence & Geotag Verification Banner -->
+              <div class="mb-3 p-3" style="background: ${b.isGeotagConfirmed ? '#f0fdf4' : (b.imagesCount > 0 ? '#fffbeb' : '#f8fafc')}; border: 1px solid ${b.isGeotagConfirmed ? '#bbf7d0' : (b.imagesCount > 0 ? '#fde68a' : '#e2e8f0')}; border-radius: var(--radius-sm);">
+                <div class="flex-between flex-wrap gap-2">
+                  <div>
+                    <h5 style="font-size: 0.85rem; font-weight: 700; color: ${b.isGeotagConfirmed ? '#166534' : (b.imagesCount > 0 ? '#92400e' : '#334155')}; margin: 0; display: flex; align-items: center; gap: 0.35rem;">
+                      <span>${b.isGeotagConfirmed ? '📍' : (b.imagesCount > 0 ? '📸' : '📎')}</span>
+                      Section D: Photographic Evidence & Geotag Audit (NAAC Criterion 2.3.1)
+                    </h5>
+                    <p style="font-size: 0.775rem; color: #475569; margin: 0.2rem 0 0;">
+                      ${b.criteriaResults?.find(cr => cr.criterionId === 'evidenceCompleteness')?.reason || (b.isGeotagConfirmed ? 'Verified classroom photographs attached' : 'No visual evidence attached')}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <span class="status-badge ${b.isGeotagConfirmed ? 'badge-success' : (b.imagesCount > 0 ? 'badge-warning' : 'badge-danger')}">
+                      ${b.isGeotagConfirmed ? 'Verified (GPS Geotag)' : (b.imagesCount > 0 ? `Photos (${b.imagesCount}) • GPS Unverified` : b.evidenceStatus)}
+                    </span>
+                    ${b.geotagDetails?.latitude ? `
+                      <div style="font-size: 0.7rem; font-family: monospace; color: #166534; font-weight: 600; margin-top: 0.2rem;">
+                        Coords: ${b.geotagDetails.latitude.toFixed(4)}°N, ${b.geotagDetails.longitude.toFixed(4)}°E (${b.geotagDetails.isCampus ? "St. Joseph's Campus Match" : "Off-Campus"})
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+
               <!-- Criterion Breakdown Table with Exact Supporting Text -->
               <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem;">Criterion-by-Criterion Evaluation & Supporting Text</h4>
               <div class="table-responsive">
@@ -1112,6 +1248,26 @@ class PedApp {
                 <div><strong>Completeness:</strong> ${c.submissionCompleteness}%</div>
                 <div><strong>Evidence Compliance:</strong> ${c.evidenceCompliance}% (${c.evidenceStatus})</div>
                 <div><strong>Assessments Mapped:</strong> ${(c.standardizedAssessments || []).join(", ") || "Written Tests"}</div>
+              </div>
+
+              <!-- Assessment CIE Artifacts Banner -->
+              <div class="mb-3 p-3" style="background: ${c.evidenceStatus === 'Verified' ? '#f0fdf4' : (c.evidenceStatus === 'Missing' ? '#fff1f2' : '#fffbeb')}; border: 1px solid ${c.evidenceStatus === 'Verified' ? '#bbf7d0' : (c.evidenceStatus === 'Missing' ? '#fecdd3' : '#fde68a')}; border-radius: var(--radius-sm);">
+                <div class="flex-between flex-wrap gap-2">
+                  <div>
+                    <h5 style="font-size: 0.85rem; font-weight: 700; color: ${c.evidenceStatus === 'Verified' ? '#166534' : '#991b1b'}; margin: 0; display: flex; align-items: center; gap: 0.35rem;">
+                      <span>${c.evidenceStatus === 'Verified' ? '✅' : '📎'}</span>
+                      Section D: CIE Assessment Artifacts & Repository Audit
+                    </h5>
+                    <p style="font-size: 0.775rem; color: #475569; margin: 0.2rem 0 0;">
+                      ${c.criteriaResults?.find(cr => cr.criterionId === 'evidenceRelevance')?.reason || 'Assessment question blueprints, model keys and sample marked scripts'}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <span class="status-badge ${c.evidenceStatus === 'Verified' ? 'badge-success' : 'badge-danger'}">
+                      ${c.evidenceStatus}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <!-- Criterion Breakdown Table -->
@@ -1513,31 +1669,33 @@ class PedApp {
   }
 
   /**
-   * EXPORTS
+   * EXPORTS — GENUINE BINARY FILES (.xlsx, .pdf, UTF-8 CSV)
    */
   exportInstitutionalExcelWorkbook() {
     const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
+    const wb = XLSX.utils.book_new();
 
-    const escapeXml = (unsafe) => {
-      if (unsafe === undefined || unsafe === null) return "";
-      return unsafe.toString().replace(/[<>&'"]/g, (c) => {
-        switch (c) {
-          case '<': return '&lt;';
-          case '>': return '&gt;';
-          case '&': return '&amp;';
-          case '\'': return '&apos;';
-          case '"': return '&quot;';
-          default: return c;
-        }
-      });
-    };
+    // Sheet 1: Department Summary
+    const deptHeaders = ["Department", "Code", "HOD", "Total Faculty", "Submissions", "Pedagogy Avg (9b)", "Assessment Avg (9c)", "Composite Index", "Status"];
+    const deptRows = this.departments.map(d => {
+      const s = analytics.deptStats[d.name] || {};
+      return [
+        d.name,
+        d.code,
+        d.hod,
+        d.totalFaculty,
+        s.submittedCount || 0,
+        s.avg9b || 0,
+        s.avg9c || 0,
+        s.avgComposite || 0,
+        s.submittedCount > 0 ? "Active" : "Pending"
+      ];
+    });
+    const wsDept = XLSX.utils.aoa_to_sheet([deptHeaders, ...deptRows]);
+    wsDept['!cols'] = [{ wch: 26 }, { wch: 8 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsDept, "Department Summary");
 
-    const makeRow = (cells) => {
-      const cXml = cells.map(cell => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join("");
-      return `<Row>${cXml}</Row>`;
-    };
-
-    // Sheet 1: Pedagogy Usage
+    // Sheet 2: Pedagogy Usage
     const pedHeaders = ["Pedagogical Strategy", "Documented Uses", "Distinct Faculty Adopters", "Adoption Rate (%)"];
     const pedRows = STANDARDIZED_PEDAGOGIES.map(p => {
       let uses = 0;
@@ -1550,8 +1708,11 @@ class PedApp {
       });
       return [p, uses, adopters.size, `${Math.round((adopters.size / Math.max(1, this.facultyRecords.length)) * 100)}%`];
     });
+    const wsPed = XLSX.utils.aoa_to_sheet([pedHeaders, ...pedRows]);
+    wsPed['!cols'] = [{ wch: 32 }, { wch: 18 }, { wch: 24 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsPed, "Pedagogy Usage");
 
-    // Sheet 2: Assessment Usage
+    // Sheet 3: Assessment Usage
     const assessHeaders = ["Assessment Method", "Documented Uses", "Distinct Faculty Adopters", "Adoption Rate (%)"];
     const assessRows = STANDARDIZED_ASSESSMENTS.map(a => {
       let uses = 0;
@@ -1564,78 +1725,349 @@ class PedApp {
       });
       return [a, uses, adopters.size, `${Math.round((adopters.size / Math.max(1, this.facultyRecords.length)) * 100)}%`];
     });
+    const wsAssess = XLSX.utils.aoa_to_sheet([assessHeaders, ...assessRows]);
+    wsAssess['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 24 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsAssess, "Assessment Usage");
 
-    // Sheet 3: Department Summary
-    const deptHeaders = ["Department", "Code", "HOD", "Total Faculty", "Submissions", "Pedagogy Avg (9b)", "Assessment Avg (9c)", "Composite Index", "Status"];
-    const deptRows = this.departments.map(d => {
-      const s = analytics.deptStats[d.name] || {};
-      return [d.name, d.code, d.hod, d.totalFaculty, s.submittedCount || 0, s.avg9b || 0, s.avg9c || 0, s.avgComposite || 0, s.submittedCount > 0 ? "Active" : "Pending"];
+    // Sheet 4: Geotag & Evidence Verification Audit (Dedicated Sheet)
+    const evHeaders = [
+      "Submission ID", "Faculty Name", "Department", "Annexure", "Evidence Status", 
+      "Score (/10)", "Photos Embedded", "GPS Geotag Verified", "Coordinates / Campus Match", 
+      "Audit Rationale", "Accreditation Recommendation"
+    ];
+    const evRows = this.submissionsLog.map(s => {
+      const ev = s.evaluationData || {};
+      const coords = ev.geotagDetails?.latitude 
+        ? `${ev.geotagDetails.latitude.toFixed(4)}°N, ${ev.geotagDetails.longitude.toFixed(4)}°E` 
+        : (ev.isGeotagConfirmed ? "Detected" : "None");
+      const locLabel = ev.geotagDetails?.isCampus ? "St. Joseph's College Campus" : (coords !== "None" ? "Off-Campus / Watermark" : "N/A");
+
+      const rationale = ev.criteriaResults?.find(c => c.criterionId.includes("evidence") || c.criterionId.includes("Evidence"))?.reason || "Audited";
+      const recommendation = ev.criteriaResults?.find(c => c.criterionId.includes("evidence") || c.criterionId.includes("Evidence"))?.recommendation || "Maintain visual archives";
+
+      return [
+        s.id,
+        s.facultyName,
+        s.department,
+        s.annexure,
+        s.evidenceStatus,
+        ev.evidenceCompliance !== undefined ? Math.round(ev.evidenceCompliance / 10) : 0,
+        ev.imagesCount || 0,
+        ev.isGeotagConfirmed ? "Yes (GPS Geotagged)" : (ev.imagesCount > 0 ? "Photos (No GPS)" : "No"),
+        `${coords} [${locLabel}]`,
+        rationale,
+        recommendation
+      ];
     });
+    const wsEv = XLSX.utils.aoa_to_sheet([evHeaders, ...evRows]);
+    wsEv['!cols'] = [
+      { wch: 18 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 22 },
+      { wch: 12 }, { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 45 }, { wch: 45 }
+    ];
+    XLSX.utils.book_append_sheet(wb, wsEv, "Geotag & Evidence Audit");
 
-    // Sheet 4: Raw Submissions Data
+    // Sheet 5: Submissions Registry Log
     const rawHeaders = ["Submission ID", "Date", "Faculty Name", "Department", "Course", "Annexure", "Completeness (%)", "Evidence Status", "Quality Score", "Verification Status"];
     const rawRows = this.submissionsLog.map(s => [
       s.id, s.date, s.facultyName, s.department, s.course, s.annexure, s.completeness, s.evidenceStatus, s.qualityScore, s.evaluationStatus
     ]);
+    const wsSub = XLSX.utils.aoa_to_sheet([rawHeaders, ...rawRows]);
+    wsSub['!cols'] = [
+      { wch: 18 }, { wch: 14 }, { wch: 24 }, { wch: 20 }, { wch: 24 },
+      { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 14 }, { wch: 24 }
+    ];
+    XLSX.utils.book_append_sheet(wb, wsSub, "Submissions Registry");
 
-    const xmlWorkbook = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
- <Worksheet ss:Name="Department Summary">
-  <Table>
-   ${makeRow(deptHeaders)}
-   ${deptRows.map(r => makeRow(r)).join("\n   ")}
-  </Table>
- </Worksheet>
- <Worksheet ss:Name="Pedagogy Usage">
-  <Table>
-   ${makeRow(pedHeaders)}
-   ${pedRows.map(r => makeRow(r)).join("\n   ")}
-  </Table>
- </Worksheet>
- <Worksheet ss:Name="Assessment Usage">
-  <Table>
-   ${makeRow(assessHeaders)}
-   ${assessRows.map(r => makeRow(r)).join("\n   ")}
-  </Table>
- </Worksheet>
- <Worksheet ss:Name="Raw Submissions">
-  <Table>
-   ${makeRow(rawHeaders)}
-   ${rawRows.map(r => makeRow(r)).join("\n   ")}
-  </Table>
- </Worksheet>
-</Workbook>`;
-
-    const blob = new Blob([xmlWorkbook], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    // Generate real binary .xlsx file
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `St_Josephs_IQAC_Institutional_Audit_${new Date().toISOString().split('T')[0]}.xls`;
+    a.download = `St_Josephs_IQAC_Institutional_Audit_${new Date().toISOString().split('T')[0]}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
 
-    this.showToast("Multi-sheet Excel workbook downloaded successfully!", "success");
+    this.showToast("Real multi-sheet Excel (.xlsx) workbook downloaded successfully!", "success");
+  }
+
+  downloadFacultyPdf(facultyId = null) {
+    const targetId = facultyId || this.selectedFacultyId;
+    const faculty = this.facultyRecords.find(f => f.id === targetId) || this.facultyRecords[0];
+    if (!faculty) {
+      this.showToast("No faculty profile selected for PDF generation.", "error");
+      return;
+    }
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
+    });
+
+    const b = faculty.annexure9b;
+    const c = faculty.annexure9c;
+    const pageW = doc.internal.pageSize.getWidth();
+
+    // 1. College Header
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageW, 70, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("ST. JOSEPH'S COLLEGE (AUTONOMOUS)", pageW / 2, 24, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.text("Tiruchirappalli, Tamil Nadu • Re-accredited by NAAC with A++ Grade (Cycle 4)", pageW / 2, 38, { align: "center" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(224, 231, 255);
+    doc.text("INTERNAL QUALITY ASSURANCE CELL (IQAC) — FACULTY APPRAISAL DOSSIER", pageW / 2, 54, { align: "center" });
+
+    // 2. Faculty Identity Table
+    const infoRows = [
+      ["Faculty Name:", faculty.facultyName, "Department:", faculty.department],
+      ["Designation:", faculty.designation || "Assistant Professor", "Academic Year:", faculty.academicYear || "2025-26"],
+      ["Course Title:", `${faculty.courseCode || ''} ${faculty.courseTitle || ''}`, "Quality Score:", `${faculty.compositeScore}/100 (${faculty.evaluationStatus || 'Provisional'})`]
+    ];
+
+    autoTable(doc, {
+      startY: 85,
+      body: infoRows,
+      theme: 'grid',
+      styles: { fontSize: 8.5, cellPadding: 4, textColor: [30, 41, 59] },
+      columnStyles: {
+        0: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 85 },
+        1: { cellWidth: 175 },
+        2: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 85 },
+        3: { cellWidth: 175 }
+      }
+    });
+
+    let currentY = doc.lastAutoTable.finalY + 10;
+
+    // 3. Geotag & Visual Evidence Audit Stamp
+    const bGeotag = b?.isGeotagConfirmed 
+      ? `GPS Geotag Verified (${b.geotagDetails?.latitude?.toFixed(4)}°N, ${b.geotagDetails?.longitude?.toFixed(4)}°E • Campus Match)` 
+      : (b?.imagesCount > 0 ? `${b.imagesCount} Photos (GPS Unverified)` : b?.evidenceStatus || 'Missing');
+    const cEvidence = c?.evidenceStatus || 'Missing';
+
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(40, currentY, pageW - 80, 44, 4, 4, 'FD');
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Visual Evidence & Geotag Verification Audit (NAAC Criterion 2.3.1):", 48, currentY + 14);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    doc.text(`• Annexure 9(b) Pedagogy: ${bGeotag}`, 52, currentY + 27);
+    doc.text(`• Annexure 9(c) Assessment: ${cEvidence} • CIE Question Blueprints & Rubrics`, 52, currentY + 38);
+
+    currentY += 54;
+
+    // 4. The 3 Mandatory Feedback Sections
+    const defText = [...(b?.deficiencies || []), ...(c?.deficiencies || [])].join("; ") || "All criteria meet institutional benchmarks.";
+    const impText = [...(b?.improvements || []), ...(c?.improvements || [])].join("; ") || "Teaching and assessment methods meet rubric standards.";
+    const recText = [...(b?.recommendations || []), ...(c?.recommendations || [])].join("; ") || "Disseminate this pedagogical practice as an institutional benchmark.";
+
+    const feedbackRows = [
+      ["1. Deficiencies Identified (Correction Required):", defText],
+      ["2. Specific Improvements Required:", impText],
+      ["3. Recommendations for Next Academic Cycle:", recText]
+    ];
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [["Feedback & Corrective Action Summary", "Details"]],
+      body: feedbackRows,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 8, cellPadding: 4, textColor: [30, 41, 59] },
+      columnStyles: {
+        0: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 175 },
+        1: { cellWidth: 345 }
+      }
+    });
+
+    currentY = doc.lastAutoTable.finalY + 10;
+
+    // 5. Criteria Score Breakdown
+    const allCriteria = [];
+    if (b?.criteriaResults) {
+      b.criteriaResults.forEach(cr => {
+        allCriteria.push(["9(b)", cr.criterionName, `${cr.awardedPoints} / ${cr.maxPoints}`, cr.supportingText?.slice(0, 70) || 'None', cr.reviewStatus]);
+      });
+    }
+    if (c?.criteriaResults) {
+      c.criteriaResults.forEach(cr => {
+        allCriteria.push(["9(c)", cr.criterionName, `${cr.awardedPoints} / ${cr.maxPoints}`, cr.supportingText?.slice(0, 70) || 'None', cr.reviewStatus]);
+      });
+    }
+
+    if (allCriteria.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+        head: [["Form", "Criterion Name", "Score", "Supporting Text Excerpt", "Status"]],
+        body: allCriteria,
+        theme: 'grid',
+        headStyles: { fillColor: [51, 65, 85], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 7.5, cellPadding: 3.5, textColor: [30, 41, 59] },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 135, fontStyle: 'bold' },
+          2: { cellWidth: 50, halign: 'center' },
+          3: { cellWidth: 235 },
+          4: { cellWidth: 65, halign: 'center' }
+        }
+      });
+      currentY = doc.lastAutoTable.finalY + 22;
+    }
+
+    // 6. Institutional Signatories
+    if (currentY + 45 > doc.internal.pageSize.getHeight() - 25) {
+      doc.addPage();
+      currentY = 40;
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.setLineDashPattern([2, 2], 0);
+    doc.line(40, currentY, pageW - 40, currentY);
+
+    doc.setTextColor(30, 41, 59);
+    doc.setFont("helvetica", "bold");
+    const sigY = currentY + 20;
+    doc.text("_______________________", 60, sigY - 6);
+    doc.text("Faculty Signature", 80, sigY + 5);
+
+    doc.text("_______________________", pageW / 2 - 40, sigY - 6);
+    doc.text("Head of Department (HOD)", pageW / 2 - 35, sigY + 5);
+
+    doc.text("_______________________", pageW - 140, sigY - 6);
+    doc.text("IQAC Coordinator", pageW - 120, sigY + 5);
+
+    const safeName = faculty.facultyName.replace(/[^a-zA-Z0-9]/g, '_');
+    doc.save(`Faculty_Appraisal_Report_${safeName}_${new Date().toISOString().split('T')[0]}.pdf`);
+    this.showToast(`Real PDF Report downloaded: Faculty_Appraisal_Report_${safeName}.pdf`, "success");
+  }
+
+  downloadInstitutionalPdf() {
+    const analytics = EvaluatorEngine.computeCollegeAnalytics(this.departments, this.facultyRecords);
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'pt',
+      format: 'a4'
+    });
+
+    const pageW = doc.internal.pageSize.getWidth();
+
+    // College Header
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageW, 65, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("ST. JOSEPH'S COLLEGE (AUTONOMOUS)", pageW / 2, 23, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Tiruchirappalli, Tamil Nadu • Re-accredited by NAAC with A++ Grade (Cycle 4)", pageW / 2, 37, { align: "center" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(224, 231, 255);
+    doc.text("INTERNAL QUALITY ASSURANCE CELL (IQAC) — INSTITUTIONAL PEDAGOGICAL & ASSESSMENT AUDIT", pageW / 2, 53, { align: "center" });
+
+    // Department Table
+    const deptHeaders = ["Department", "Code", "Head of Dept (HOD)", "Faculty Count", "Submissions", "Pedagogy Avg (9b)", "Assessment Avg (9c)", "Composite Index", "Status"];
+    const deptRows = this.departments.map(d => {
+      const s = analytics.deptStats[d.name] || {};
+      return [
+        d.name,
+        d.code,
+        d.hod,
+        d.totalFaculty,
+        s.submittedCount || 0,
+        s.avg9b > 0 ? `${s.avg9b}/100` : '--',
+        s.avg9c > 0 ? `${s.avg9c}/100` : '--',
+        s.avgComposite > 0 ? `${s.avgComposite}/100` : '--',
+        s.submittedCount > 0 ? 'Active' : 'Pending'
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 85,
+      head: [deptHeaders],
+      body: deptRows,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+      styles: { fontSize: 8.5, cellPadding: 5, textColor: [30, 41, 59] },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 140 },
+        1: { cellWidth: 45, halign: 'center' },
+        2: { cellWidth: 120 },
+        3: { cellWidth: 70, halign: 'center' },
+        4: { cellWidth: 75, halign: 'center' },
+        5: { cellWidth: 95, halign: 'center' },
+        6: { cellWidth: 95, halign: 'center' },
+        7: { cellWidth: 85, halign: 'center', fontStyle: 'bold' },
+        8: { cellWidth: 65, halign: 'center' }
+      }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 35;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("_______________________", 80, finalY);
+    doc.text("IQAC Coordinator", 100, finalY + 12);
+
+    doc.text("_______________________", pageW / 2 - 50, finalY);
+    doc.text("Dean of Academics", pageW / 2 - 35, finalY + 12);
+
+    doc.text("_______________________", pageW - 160, finalY);
+    doc.text("Principal", pageW - 130, finalY + 12);
+
+    doc.save(`St_Josephs_IQAC_Institutional_Audit_${new Date().toISOString().split('T')[0]}.pdf`);
+    this.showToast("Real Institutional Audit PDF report downloaded successfully!", "success");
   }
 
   exportSubmissionsCsv() {
-    const headers = ["Submission ID", "Date", "Faculty Name", "Department", "Annexure", "Course", "Completeness (%)", "Evidence Status", "Quality Score", "Evaluation Status"];
-    const rows = this.submissionsLog.map(s => [
-      s.id,
-      s.date,
-      `"${s.facultyName}"`,
-      `"${s.department}"`,
-      `"${s.annexure}"`,
-      `"${s.course}"`,
-      s.completeness,
-      s.evidenceStatus,
-      s.qualityScore,
-      `"${s.evaluationStatus}"`
-    ]);
+    const headers = [
+      "Submission ID", "Date", "Faculty Name", "Department", "Annexure", "Course", 
+      "Completeness (%)", "Evidence Status", "Images Attached", "GPS Geotag Verified", 
+      "Coordinates / Location", "Quality Score", "Evaluation Status"
+    ];
+    const rows = this.submissionsLog.map(s => {
+      const ev = s.evaluationData || {};
+      const coords = ev.geotagDetails?.latitude 
+        ? `${ev.geotagDetails.latitude.toFixed(4)}N ${ev.geotagDetails.longitude.toFixed(4)}E` 
+        : (ev.isGeotagConfirmed ? "Detected" : "None");
+
+      return [
+        s.id,
+        s.date,
+        `"${s.facultyName}"`,
+        `"${s.department}"`,
+        `"${s.annexure}"`,
+        `"${s.course}"`,
+        s.completeness,
+        `"${s.evidenceStatus}"`,
+        ev.imagesCount || 0,
+        ev.isGeotagConfirmed ? "Yes" : "No",
+        `"${coords}"`,
+        s.qualityScore,
+        `"${s.evaluationStatus}"`
+      ];
+    });
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
     this.downloadCsvFile(csvContent, `St_Josephs_IQAC_Submissions_${new Date().toISOString().split('T')[0]}.csv`);
@@ -1675,7 +2107,8 @@ class PedApp {
   }
 
   downloadCsvFile(csvContent, fileName) {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Add UTF-8 BOM (\uFEFF) so Microsoft Excel on Windows parses accents and degree symbols properly
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1686,6 +2119,7 @@ class PedApp {
   }
 
   openPrintModal(mode = "faculty") {
+    this.currentModalMode = mode;
     const modal = document.getElementById("dossier-modal");
     const content = document.getElementById("modal-content-area");
     if (!modal || !content) return;

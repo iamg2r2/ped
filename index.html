@@ -278,12 +278,16 @@
           </div>
           <!-- Action Buttons -->
           <div class="d-flex gap-2">
-            <button id="print-dossier-btn" class="btn btn-primary btn-sm">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-              Print / Save Faculty Report (PDF)
+            <button id="download-faculty-pdf-btn" class="btn btn-primary btn-sm" title="Download real binary PDF appraisal report">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              Download PDF Report (.pdf)
             </button>
-            <button id="export-faculty-csv-btn" class="btn btn-secondary btn-sm">
-              Export Report (CSV)
+            <button id="print-dossier-btn" class="btn btn-secondary btn-sm" title="Preview and print official dossier">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print Preview
+            </button>
+            <button id="export-faculty-csv-btn" class="btn btn-outline btn-sm">
+              Export (CSV)
             </button>
           </div>
         </div>
@@ -324,12 +328,16 @@
             <p class="section-desc">Evidence-based institutional analysis calculated directly from actual faculty submissions across departments, pedagogies, and assessments.</p>
           </div>
           <div class="d-flex gap-2">
-            <button id="print-institutional-btn" class="btn btn-primary btn-sm">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-              Print Institutional Report (PDF)
+            <button id="download-institutional-pdf-btn" class="btn btn-primary btn-sm" title="Download real binary PDF institutional audit report">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              Download Institutional PDF (.pdf)
             </button>
-            <button id="export-summary-table-btn" class="btn btn-secondary btn-sm">
-              Download Department Summary (CSV)
+            <button id="print-institutional-btn" class="btn btn-secondary btn-sm" title="Preview institutional dossier">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              Print Preview
+            </button>
+            <button id="export-summary-table-btn" class="btn btn-outline btn-sm">
+              Export (CSV)
             </button>
           </div>
         </div>
@@ -541,9 +549,13 @@
             <span class="modal-subtitle">Internal Quality Assurance Cell (IQAC) • St. Joseph's College (Autonomous)</span>
           </div>
           <div class="modal-actions">
-            <button id="modal-print-btn" class="btn btn-primary btn-sm">
+            <button id="modal-download-pdf-btn" class="btn btn-primary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              Download PDF (.pdf)
+            </button>
+            <button id="modal-print-btn" class="btn btn-secondary btn-sm">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-              Print / Save as PDF
+              Print
             </button>
             <button id="modal-close-btn" class="btn btn-icon" aria-label="Close modal">✕</button>
           </div>
